@@ -836,8 +836,7 @@ const DEFAULT_VEHICLE_PRICING = {
   "RV / Motorhome":   {addOnProfit:60},
 };
 const DEFAULT_SETTINGS = {
-  businessName:"N & K On Time Mobile Tires LLC", owner1Name:"Owner 1", owner2Name:"Owner 2",
-  owner1Active:true, owner2Active:true, profitSplit1:50, profitSplit2:50,
+  businessName:"N & K On Time Mobile Tires LLC", ownerName:"Owner",
   weeklyGoal:1200, taxRate:25, repairTarget:90, replacementTarget:110,
   skipThreshold:70, riskyMiles:25, costPerMile:0.65,
   defaultTargetProfit:100,
@@ -2074,12 +2073,12 @@ function Expenses({expenses,setExpenses,toast}) {
 // ── Payouts ─────────────────────────────────────────────────────────────────
 function Payouts({jobs,expenses,settings}) {
   const groups=useMemo(()=>groupByWeek(jobs),[jobs]);
+  const ownerName=settings.ownerName||"Owner";
   return html`<div class="screen"><div class="page page-enter">
     <div class="section-label">Owner Payouts</div>
     <div class="card card-pad">
       <div style=${{fontSize:12,color:"var(--t3)",lineHeight:1.5}}>
-        Splits: <strong style=${{color:"var(--t2)"}}>${settings.owner1Name||"Owner 1"}</strong> ${settings.profitSplit1||50}% ·
-        <strong style=${{color:"var(--t2)"}}>${settings.owner2Name||"Owner 2"}</strong> ${settings.profitSplit2||50}%
+        Net profit goes to <strong style=${{color:"var(--t2)"}}>${ownerName}</strong> after direct costs and weekly fixed expenses.
       </div>
     </div>
     ${groups.length===0?html`<${EmptyState} icon="💰" title="No payouts yet" sub="Log jobs to see weekly payouts here."/>`:""}
@@ -2087,8 +2086,6 @@ function Payouts({jobs,expenses,settings}) {
       const sum=weekSummary(weekJobs,settings);
       const fixed=weeklyFixed(settings);
       const net=r2(sum.grossProfit-fixed);
-      const o1=r2(net*Number(settings.profitSplit1||50)/100);
-      const o2=r2(net*Number(settings.profitSplit2||50)/100);
       return html`<div key=${weekStart} class="card card-pad stack">
         <div style=${{fontSize:12,fontWeight:800,color:"var(--t2)",textTransform:"uppercase",letterSpacing:".5px"}}>${weekLabel(weekStart)}</div>
         <div style=${{display:"grid",gridTemplateColumns:"1fr auto",gap:8,fontSize:13}}>
@@ -2098,12 +2095,10 @@ function Payouts({jobs,expenses,settings}) {
           <div style=${{fontWeight:700,paddingTop:6,borderTop:"1px solid var(--border)",color:"var(--t1)"}}>Net</div>
           <div style=${{textAlign:"right",fontFamily:'"IBM Plex Mono",monospace',fontWeight:700,paddingTop:6,borderTop:"1px solid var(--border)",color:net>=0?"var(--green)":"var(--red)"}}>${money(net)}</div>
         </div>
-        ${(settings.owner1Active!==false||settings.owner2Active!==false)&&html`<div style=${{display:"grid",gridTemplateColumns:"1fr auto",gap:8,padding:"10px 12px",background:"var(--s3)",borderRadius:8,fontSize:13}}>
-          ${settings.owner1Active!==false&&html`<div style=${{color:"var(--t2)"}}>${settings.owner1Name||"Owner 1"}</div>
-          <div style=${{textAlign:"right",fontFamily:'"IBM Plex Mono",monospace',fontWeight:700,color:"var(--green)"}}>${money(o1)}</div>`}
-          ${settings.owner2Active!==false&&html`<div style=${{color:"var(--t2)"}}>${settings.owner2Name||"Owner 2"}</div>
-          <div style=${{textAlign:"right",fontFamily:'"IBM Plex Mono",monospace',fontWeight:700,color:"var(--green)"}}>${money(o2)}</div>`}
-        </div>`}
+        <div style=${{display:"grid",gridTemplateColumns:"1fr auto",gap:8,padding:"10px 12px",background:"var(--s3)",borderRadius:8,fontSize:13}}>
+          <div style=${{color:"var(--t2)"}}>${ownerName} payout</div>
+          <div style=${{textAlign:"right",fontFamily:'"IBM Plex Mono",monospace',fontWeight:700,color:net>=0?"var(--green)":"var(--red)"}}>${money(net)}</div>
+        </div>
       </div>`;
     })}
   </div></div>`;
@@ -2249,16 +2244,10 @@ function Settings({settings,setSettings,jobs,inventory,toast}) {
       </div>
     </div>
 
-    <div class="section-label">Owners & Splits</div>
+    <div class="section-label">Owner</div>
     <div class="card card-pad stack">
-      <div style=${{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-        <div><label style=${lbl}>Owner 1 name</label><input type="text" value=${settings.owner1Name||""} onChange=${e=>update("owner1Name",e.target.value)} style=${inp}/></div>
-        <div><label style=${lbl}>Split %</label><input type="number" min="0" max="100" value=${settings.profitSplit1||50} onChange=${e=>update("profitSplit1",Number(e.target.value))} style=${inp}/></div>
-      </div>
-      <div style=${{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-        <div><label style=${lbl}>Owner 2 name</label><input type="text" value=${settings.owner2Name||""} onChange=${e=>update("owner2Name",e.target.value)} style=${inp}/></div>
-        <div><label style=${lbl}>Split %</label><input type="number" min="0" max="100" value=${settings.profitSplit2||50} onChange=${e=>update("profitSplit2",Number(e.target.value))} style=${inp}/></div>
-      </div>
+      <div><label style=${lbl}>Owner name</label><input type="text" value=${settings.ownerName||""} onChange=${e=>update("ownerName",e.target.value)} placeholder="Your name" style=${inp}/></div>
+      <div style=${{fontSize:11,color:"var(--t3)"}}>100% of net profit (after direct costs and weekly fixed expenses) goes to the owner.</div>
     </div>
 
     <div class="section-label">Pricing</div>
