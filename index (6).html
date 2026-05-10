@@ -1,0 +1,2514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="N&K On Time" />
+  <meta name="theme-color" content="#0a0a0f" />
+  <title>N &amp; K On Time Mobile Tires — Business Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="./icon.png">
+  <link rel="apple-touch-icon" href="./icon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="./icon.png">
+  <link rel="manifest" href="./manifest.json">
+<style>
+  :root {
+    --bg:          #0a0a0f;
+    --s1:          #13131a;
+    --s2:          #1c1c26;
+    --s3:          #242432;
+    --s4:          #2e2e40;
+    --border:      rgba(255,255,255,.06);
+    --border2:     rgba(255,255,255,.03);
+    --t1: #f0f0fa;
+    --t2: #8888a8;
+    --t3: #44445a;
+    --blue:        #4f8ef7;
+    --blue-dim:    rgba(79,142,247,.12);
+    --blue-glow:   rgba(79,142,247,.25);
+    --orange:      #ff7d3b;
+    --orange-dim:  rgba(255,125,59,.12);
+    --orange-glow: rgba(255,125,59,.3);
+    --green:       #22c55e;
+    --green-dim:   rgba(34,197,94,.12);
+    --red:         #ef4444;
+    --red-dim:     rgba(239,68,68,.10);
+    --red-bg:      rgba(239,68,68,.10);
+    --amber:       #f59e0b;
+    --amber-dim:   rgba(245,158,11,.10);
+    --amber-bg:    rgba(245,158,11,.10);
+    --gold:        #c8a44a;
+    --gold-dim:    rgba(200,164,74,.12);
+    --gold-bg:     rgba(200,164,74,.12);
+    --r1:   22px;
+    --r2:   16px;
+    --r3:   12px;
+    --r4:   8px;
+    --r-sm: 12px;
+    --r-xs: 8px;
+    --sh-card:  0 1px 0 rgba(255,255,255,.04) inset, 0 4px 24px rgba(0,0,0,.5);
+    --sh-hero:  0 0 0 1px rgba(79,142,247,.2), 0 8px 40px rgba(79,142,247,.15);
+    --sh-cta:   0 0 0 1px rgba(255,125,59,.25), 0 8px 32px rgba(255,125,59,.2);
+    --sh-float: 0 12px 48px rgba(0,0,0,.7);
+  }
+  *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body,#root { height:100%; font-family:"IBM Plex Sans",sans-serif; background:var(--bg); overflow:hidden; color:var(--t1); }
+  input,select,textarea,button { font-family:"IBM Plex Sans",sans-serif; }
+  input,select,textarea { font-size:16px !important; color:var(--t1); }
+  button { cursor:pointer; }
+  .app { height:100%; display:flex; flex-direction:column; }
+  .screen { background:var(--bg); min-height:100%; }
+  .page { padding:20px 16px calc(120px + env(safe-area-inset-bottom)); }
+
+  @keyframes fadeSlideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes fadeSlideIn { from{opacity:0;transform:translateX(-12px)} to{opacity:1;transform:translateX(0)} }
+  @keyframes scaleIn    { from{opacity:0;transform:scale(.92)} to{opacity:1;transform:scale(1)} }
+  @keyframes shimmer    { 0%{background-position:-200% center} 100%{background-position:200% center} }
+  @keyframes heroGlow   { 0%,100%{opacity:.6} 50%{opacity:1} }
+  @keyframes countUp    { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes pulse      { 0%,100%{opacity:1} 50%{opacity:.3} }
+  @keyframes logoPulse  { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.55;transform:scale(.94)} }
+  .syncing    { animation:pulse 1.4s infinite; }
+  .logo-pulse { animation:logoPulse 2s ease-in-out infinite; }
+  .page-enter { animation:fadeSlideUp .25s cubic-bezier(.4,0,.2,1) both; }
+  .card-anim  { animation:fadeSlideUp .28s cubic-bezier(.4,0,.2,1) both; }
+  .card-anim:nth-child(1){animation-delay:.02s}
+  .card-anim:nth-child(2){animation-delay:.05s}
+  .card-anim:nth-child(3){animation-delay:.08s}
+  .card-anim:nth-child(4){animation-delay:.10s}
+  .card-anim:nth-child(5){animation-delay:.12s}
+  .card-anim:nth-child(6){animation-delay:.14s}
+  .card-anim:nth-child(n+7){animation:none !important; opacity:1}
+  @media (prefers-reduced-motion: reduce) {
+    .card-anim, .page-enter { animation:none !important; opacity:1 !important; transform:none !important; }
+  }
+  .press-scale { transition:transform .1s,opacity .1s; }
+  .press-scale:active { transform:scale(.96); opacity:.85; }
+  .shimmer-text {
+    background:linear-gradient(90deg,var(--t1) 25%,var(--orange) 50%,var(--t1) 75%);
+    background-size:200% auto;
+    -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent;
+    animation:shimmer 3s linear infinite;
+  }
+
+  .header-compact {
+    background:linear-gradient(180deg,#16161f 0%,#0f0f17 100%);
+    padding:12px 18px; padding-top:calc(12px + env(safe-area-inset-top));
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    flex-shrink:0; border-bottom:1px solid var(--border);
+    box-shadow:0 1px 0 rgba(79,142,247,.1);
+  }
+  .header-compact h1 { font-size:16px; font-weight:700; letter-spacing:-.4px; color:var(--t1); }
+  .header-compact p  { font-size:10px; color:var(--t3); margin-top:2px; }
+
+  .pro-hero {
+    background:linear-gradient(145deg,#12121e 0%,#0d1020 40%,#101828 100%);
+    border:1px solid rgba(79,142,247,.15); border-radius:var(--r1); padding:24px 22px;
+    position:relative; overflow:hidden;
+    box-shadow:0 0 0 1px rgba(79,142,247,.08),0 8px 32px rgba(0,0,0,.5);
+    margin-bottom:16px;
+  }
+  .pro-hero::before {
+    content:''; position:absolute; top:-60px; right:-40px; width:220px; height:220px;
+    background:radial-gradient(circle,rgba(79,142,247,.1) 0%,transparent 65%);
+    pointer-events:none;
+  }
+  .pro-hero::after {
+    content:''; position:absolute; bottom:-40px; left:-30px; width:160px; height:160px;
+    background:radial-gradient(circle,rgba(34,197,94,.06) 0%,transparent 65%);
+    pointer-events:none;
+  }
+  .revenue-ticker {
+    font-family:"IBM Plex Mono",monospace; font-size:38px; font-weight:700;
+    letter-spacing:-2px; line-height:1; color:var(--t1);
+    animation:countUp .6s cubic-bezier(.4,0,.2,1) both;
+  }
+  .revenue-ticker .currency { font-size:22px; color:var(--t2); font-weight:600; }
+  .progress-ring { position:relative; display:inline-flex; align-items:center; justify-content:center; }
+  .progress-ring svg { transform:rotate(-90deg); }
+  .progress-ring-bg   { fill:none; stroke:var(--s4); }
+  .progress-ring-fill { fill:none; stroke-linecap:round; transition:stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1); filter:drop-shadow(0 0 6px currentColor); }
+  .progress-ring-label { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+
+  .section-label {
+    font-size:11px; font-weight:800; text-transform:uppercase;
+    letter-spacing:1.8px; color:var(--t3); margin:32px 0 12px;
+  }
+  .section-label:first-child { margin-top:0; }
+
+  .card { background:var(--s1); border-radius:var(--r1); overflow:hidden; box-shadow:var(--sh-card); border:1px solid var(--border); margin-bottom:12px; }
+  .card-pad { padding:18px 20px; }
+  .card-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:15px 20px; border-bottom:1px solid var(--border2); }
+  .card-row:last-child { border-bottom:none; }
+
+  .hero-cta { background:linear-gradient(135deg,#1a1a28 0%,#14141e 100%); border:1px solid rgba(79,142,247,.2); border-radius:var(--r1); padding:20px; box-shadow:var(--sh-hero); margin-bottom:14px; position:relative; overflow:hidden; }
+  .hero-cta::before { content:''; position:absolute; top:-40px; right:-40px; width:180px; height:180px; background:radial-gradient(circle,rgba(79,142,247,.12) 0%,transparent 70%); pointer-events:none; }
+  .cta-btn { background:linear-gradient(135deg,#ff8c4b 0%,#ff6420 100%); color:#fff; border:none; border-radius:var(--r3); padding:15px 22px; font-size:15px; font-weight:800; letter-spacing:-.2px; box-shadow:var(--sh-cta); transition:opacity .15s,transform .15s; display:flex; align-items:center; gap:8px; justify-content:center; width:100%; }
+  .cta-btn:active { opacity:.85; transform:scale(.97); }
+
+  .kpi-grid { display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--border); border-radius:var(--r1); overflow:hidden; margin-bottom:12px; box-shadow:var(--sh-card); }
+  .kpi-grid.three { grid-template-columns:1fr 1fr 1fr; }
+  .kpi { background:var(--s1); padding:17px 16px 15px; }
+  .kpi-label { font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:1px; color:var(--t3); margin-bottom:8px; }
+  .kpi-value { font-family:"IBM Plex Mono",monospace; font-size:20px; font-weight:700; line-height:1; letter-spacing:-.8px; color:var(--t1); }
+  .kpi-value.green { color:var(--green); }
+  .kpi-value.red   { color:var(--red); }
+  .kpi-value.blue  { color:var(--blue); }
+  .kpi-sub { font-size:10px; color:var(--t3); margin-top:6px; font-weight:500; }
+
+  .mini-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--border); border-radius:var(--r1); overflow:hidden; margin-bottom:12px; box-shadow:var(--sh-card); }
+  .mini-box { background:var(--s1); padding:15px 8px; text-align:center; }
+  .mini-box strong { display:block; font-family:"IBM Plex Mono",monospace; font-size:15px; font-weight:700; color:var(--t1); letter-spacing:-.3px; }
+  .mini-box span   { display:block; font-size:8px; color:var(--t3); text-transform:uppercase; letter-spacing:.8px; margin-top:5px; font-weight:700; }
+
+  .goal-track { height:3px; background:var(--s4); border-radius:999px; overflow:hidden; margin:14px 0 8px; }
+  .goal-fill  { height:100%; border-radius:999px; transition:width .7s cubic-bezier(.4,0,.2,1); }
+  .goal-fill.full { background:var(--green); box-shadow:0 0 8px var(--green); }
+  .goal-fill.mid  { background:var(--blue);  box-shadow:0 0 8px var(--blue-glow); }
+  .goal-fill.low  { background:var(--amber); }
+
+  .stack { display:grid; gap:10px; }
+  .job-row { background:var(--s1); border-radius:var(--r2); padding:15px 17px; display:flex; align-items:flex-start; gap:13px; box-shadow:var(--sh-card); border:1px solid var(--border); transition:transform .15s; }
+  .job-row:active { transform:scale(.985); }
+  .job-icon  { width:42px; height:42px; border-radius:12px; background:var(--s3); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:20px; }
+  .job-main  { flex:1; min-width:0; }
+  .job-title { font-size:14px; font-weight:700; color:var(--t1); letter-spacing:-.2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .job-meta  { font-size:11px; color:var(--t3); margin-top:3px; line-height:1.6; }
+  .job-right { text-align:right; flex-shrink:0; }
+
+  .pending-banner { background:var(--gold-dim); border:1px solid rgba(200,164,74,.2); border-radius:var(--r2); padding:15px 18px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; }
+  .pending-banner-title { font-size:13px; font-weight:700; color:var(--gold); }
+  .pending-banner-sub   { font-size:11px; color:rgba(200,164,74,.6); margin-top:3px; font-weight:600; }
+
+  .source-bar           { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border2); }
+  .source-bar:last-child { border-bottom:none; }
+  .source-bar-track     { flex:1; height:2px; background:var(--s4); border-radius:999px; overflow:hidden; }
+  .source-bar-fill      { height:100%; background:var(--blue); border-radius:999px; box-shadow:0 0 6px var(--blue-glow); transition:width .8s cubic-bezier(.4,0,.2,1); }
+
+  .label { font-size:11px; color:var(--t2); font-weight:500; }
+  .sub   { font-size:11px; color:var(--t3); font-weight:500; }
+  .mono  { font-family:"IBM Plex Mono",monospace; }
+  .value { font-family:"IBM Plex Mono",monospace; font-size:14px; font-weight:700; color:var(--t1); }
+  .value.big    { font-size:22px; }
+  .value.green  { color:var(--green); }
+  .value.red    { color:var(--red); }
+  .value.orange { color:var(--orange); }
+  .sub.green    { color:var(--green);  font-weight:700; }
+  .sub.red      { color:var(--red);    font-weight:700; }
+  .sub.orange   { color:var(--orange); font-weight:700; }
+
+  .pill { display:inline-block; padding:3px 10px; border-radius:999px; font-size:10px; font-weight:800; line-height:1.5; letter-spacing:.2px; }
+  .pill.green  { background:var(--green-dim); color:var(--green); }
+  .pill.red    { background:var(--red-dim);   color:var(--red); }
+  .pill.orange { background:var(--orange-dim);color:var(--orange); }
+  .pill.gray   { background:var(--s3);        color:var(--t2); }
+  .pill.blue   { background:var(--blue-dim);  color:var(--blue); }
+  .pill.gold   { background:var(--gold-dim);  color:var(--gold); }
+
+  .field { margin-bottom:14px; }
+  .field label { display:block; font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:1.2px; color:var(--t2); margin-bottom:8px; }
+  .field input,.field select,.field textarea { width:100%; border:1px solid var(--border); background:var(--s3); border-radius:var(--r3); padding:13px 15px; outline:none; transition:border-color .15s,box-shadow .15s; color:var(--t1); }
+  .field input:focus,.field select:focus,.field textarea:focus { border-color:var(--blue); box-shadow:0 0 0 3px var(--blue-dim); }
+  .field select option { background:var(--s2); color:var(--t1); }
+  .field textarea { min-height:72px; resize:vertical; }
+  .field-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+  .chip-row { display:flex; flex-wrap:wrap; gap:7px; margin-top:2px; }
+  .chip { border:1px solid var(--border); background:var(--s3); border-radius:999px; padding:8px 14px; font-size:12px; font-weight:700; color:var(--t2); transition:all .15s; }
+  .chip.active { background:var(--blue-dim); color:var(--blue); border-color:rgba(79,142,247,.3); }
+  .chip.sm { padding:6px 12px; font-size:11px; }
+
+  .city-input-wrap { position:relative; }
+  .city-dropdown   { position:absolute; top:calc(100% + 6px); left:0; right:0; background:var(--s2); border:1px solid var(--border); border-radius:var(--r2); box-shadow:var(--sh-float); z-index:200; max-height:240px; overflow-y:auto; animation:fadeSlideUp .2s ease; }
+  .city-option     { padding:13px 16px; font-size:14px; border-bottom:1px solid var(--border2); cursor:pointer; display:flex; align-items:center; gap:8px; color:var(--t1); }
+  .city-option:last-child { border-bottom:none; }
+  .city-option:active { background:var(--s3); }
+  .city-section-head { padding:8px 16px 4px; font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:1px; color:var(--t3); background:var(--s3); }
+
+  .quote-box { background:linear-gradient(135deg,var(--s2) 0%,#181824 100%); border-radius:var(--r1); padding:18px; margin-bottom:14px; border:1px solid rgba(79,142,247,.15); box-shadow:0 0 0 1px rgba(79,142,247,.06),var(--sh-card); }
+  .qq-suggested       { text-align:center; padding:14px 10px 12px; border-bottom:1px solid var(--border2); }
+  .qq-suggested-label { font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:1.4px; color:var(--t3); margin-bottom:6px; }
+  .qq-suggested-price {
+    font-family:"IBM Plex Mono",monospace;
+    font-size:48px; font-weight:800; line-height:.95;
+    letter-spacing:-2.4px;
+    color:var(--t1);
+    font-feature-settings:"tnum" 1, "lnum" 1;
+    background:linear-gradient(180deg,#fff 0%,#cfd9ff 90%);
+    -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent;
+    animation:countUp .4s ease both;
+  }
+  .qq-dec-badge       { display:inline-flex; align-items:center; gap:5px; padding:5px 14px; border-radius:999px; font-size:11px; font-weight:800; margin-top:10px; }
+  .qq-dec-badge.take  { background:var(--green-dim); color:var(--green); }
+  .qq-dec-badge.raise { background:var(--amber-dim); color:var(--amber); }
+  .qq-dec-badge.low   { background:var(--red-dim);   color:var(--red); }
+  .qq-apply-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; padding:12px; }
+  .qq-apply-btn { border:none; border-radius:var(--r3); padding:10px 4px; font-size:11px; font-weight:800; cursor:pointer; line-height:1.3; transition:all .15s; }
+  .qq-apply-btn:active { opacity:.75; transform:scale(.95); }
+  .qq-apply-btn.suggested { background:var(--green-dim); color:var(--green); border:1px solid rgba(34,197,94,.2); }
+  .qq-apply-btn.premium   { background:var(--orange-dim);color:var(--orange);border:1px solid rgba(255,125,59,.2); }
+  .qq-apply-btn.custom    { background:var(--s3); color:var(--t2); border:1px solid var(--border); }
+  .qq-apply-btn.active-sel{ outline:1.5px solid currentColor; outline-offset:2px; }
+
+  .src-grid { display:flex; flex-wrap:wrap; gap:7px; margin-top:4px; }
+  .src-btn  { border:1px solid var(--border); background:var(--s3); border-radius:var(--r3); padding:9px 12px; font-size:12px; font-weight:700; color:var(--t2); transition:all .15s; display:flex; align-items:center; gap:5px; }
+  .src-btn.active { background:var(--blue-dim); color:var(--blue); border-color:rgba(79,142,247,.3); }
+  .pay-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:4px; }
+  .pay-btn  { border:1px solid var(--border); border-radius:var(--r2); padding:11px 4px; background:var(--s3); display:flex; flex-direction:column; align-items:center; gap:4px; font-size:11px; font-weight:700; color:var(--t2); transition:all .15s; }
+  .pay-btn.active { background:var(--blue-dim); color:var(--blue); border-color:rgba(79,142,247,.3); }
+  .pay-btn .pay-icon { font-size:18px; }
+
+  .sticky-save {
+    position:sticky; bottom:0; left:0; right:0;
+    background:var(--bg); border-top:1px solid var(--border);
+    padding:13px 16px; padding-bottom:calc(13px + env(safe-area-inset-bottom));
+    display:grid; grid-template-columns:1fr 1fr; gap:10px;
+    z-index:50; box-shadow:0 -8px 32px rgba(0,0,0,.6);
+  }
+
+  .btn { border:none; border-radius:var(--r3); padding:15px 18px; font-weight:700; font-size:14px; transition:all .15s; letter-spacing:-.1px; }
+  .btn:active { opacity:.8; transform:scale(.97); }
+  .btn.primary   { background:linear-gradient(135deg,#5a97ff,#3d7ef5); color:#fff; box-shadow:0 4px 16px rgba(79,142,247,.3); }
+  .btn.secondary { background:var(--s3); color:var(--t2); border:1px solid var(--border); }
+  .btn.sm  { padding:9px 14px; font-size:12px; border-radius:var(--r4); }
+  .btn.xs  { padding:6px 10px; font-size:11px; border-radius:7px; font-weight:700; }
+  .btn.danger  { background:var(--red-dim);    color:var(--red); }
+  .btn.success { background:var(--green-dim);  color:var(--green); }
+  .btn.blue    { background:var(--blue-dim);   color:var(--blue); }
+  .btn.orange  { background:var(--orange-dim); color:var(--orange); }
+  .btn.gold    { background:var(--gold-dim);   color:var(--gold); }
+
+  .form-group { background:var(--s1); border-radius:var(--r1); padding:16px 18px; margin-bottom:10px; box-shadow:var(--sh-card); border:1px solid var(--border); }
+  .form-group-title { font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:1.4px; color:var(--t2); margin-bottom:14px; }
+
+  .success-strip { background:var(--green-dim); border:1px solid rgba(34,197,94,.2); border-radius:var(--r2); padding:14px 16px; margin-bottom:14px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; animation:scaleIn .3s ease; }
+  .success-strip-title { font-size:12px; font-weight:700; color:var(--green); width:100%; margin-bottom:4px; }
+
+  .bottom-nav { display:flex; background:linear-gradient(180deg,#0f0f17 0%,#0a0a0f 100%); border-top:1px solid var(--border); padding-bottom:env(safe-area-inset-bottom); flex-shrink:0; box-shadow:0 -4px 20px rgba(0,0,0,.5),0 -1px 0 rgba(79,142,247,.08); }
+  .nav-btn { flex:1; border:none; background:none; padding:10px 2px 9px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; color:var(--t3); font-size:7.5px; font-weight:800; text-transform:uppercase; letter-spacing:.6px; position:relative; transition:color .15s; }
+  .nav-btn.active { color:var(--blue); }
+  .nav-btn.active::after { content:''; position:absolute; top:0; left:50%; transform:translateX(-50%); width:24px; height:2px; background:linear-gradient(90deg,var(--blue),#7ab4ff); border-radius:0 0 4px 4px; box-shadow:0 0 8px var(--blue-glow); }
+  .nav-btn .ico { font-size:19px; line-height:1; transition:transform .15s; }
+  .nav-btn.active .ico { transform:scale(1.1); filter:drop-shadow(0 0 4px var(--blue-glow)); }
+  .nav-btn[data-id="add"] { color:var(--t2); }
+  .nav-btn[data-id="add"].active { color:var(--orange); }
+  .nav-btn[data-id="add"].active::after { background:linear-gradient(90deg,var(--orange),#ffa060); box-shadow:0 0 8px var(--orange-glow); }
+  .nav-btn[data-id="add"].active .ico { filter:drop-shadow(0 0 4px var(--orange-glow)); }
+
+  .settings-row { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:14px 20px; border-bottom:1px solid var(--border2); }
+  .settings-row:last-child { border-bottom:none; }
+  .settings-inp { border:1px solid var(--border); border-radius:var(--r4); padding:10px 13px; font-size:15px; outline:none; background:var(--s3); color:var(--t1); transition:border-color .15s; }
+  .settings-inp:focus { border-color:var(--blue); box-shadow:0 0 0 3px var(--blue-dim); }
+  .expense-row { display:grid; grid-template-columns:1fr 90px auto auto; gap:8px; align-items:center; padding:11px 20px; border-bottom:1px solid var(--border2); }
+  .expense-row:last-child { border-bottom:none; }
+  .expense-row input { border:1px solid var(--border); border-radius:var(--r4); padding:9px 12px; font-size:15px; outline:none; background:var(--s3); color:var(--t1); width:100%; }
+
+  .empty { padding:60px 20px; text-align:center; }
+  .empty-icon  { font-size:40px; margin-bottom:14px; opacity:.7; }
+  .empty-title { font-size:15px; font-weight:700; margin-bottom:6px; color:var(--t1); }
+  .empty-sub   { font-size:13px; color:var(--t3); line-height:1.6; }
+
+  .tax-box { background:var(--gold-dim); border:1px solid rgba(200,164,74,.2); border-radius:var(--r3); padding:13px 16px; margin-top:12px; }
+  .tax-box .tax-lbl  { color:var(--gold); font-weight:800; font-size:9px; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
+  .tax-box .tax-amt  { font-family:"IBM Plex Mono",monospace; font-size:18px; font-weight:700; color:var(--gold); }
+  .tax-box .tax-hint { font-size:11px; color:rgba(200,164,74,.6); margin-top:4px; }
+  .inline-note { font-size:11px; color:var(--t3); line-height:1.6; margin-bottom:14px; }
+
+  .auth-field { margin-bottom:14px; }
+  .auth-label { display:block; font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:1.2px; color:var(--t3); margin-bottom:8px; }
+  .auth-inp2 { width:100%; background:var(--s2); border:1px solid var(--border); border-radius:var(--r2); padding:16px 18px; color:var(--t1); font-size:17px; outline:none; transition:border-color .15s,box-shadow .15s; }
+  .auth-inp2::placeholder { color:var(--t3); }
+  .auth-inp2:focus { border-color:var(--blue); box-shadow:0 0 0 3px var(--blue-dim); }
+  .auth-btn-main   { width:100%; background:linear-gradient(135deg,#5a97ff,#3d7ef5); color:#fff; border:none; border-radius:var(--r2); padding:17px; font-size:16px; font-weight:700; margin-bottom:10px; box-shadow:0 4px 20px rgba(79,142,247,.3); transition:all .15s; }
+  .auth-btn-main:active { opacity:.85; transform:scale(.98); }
+  .auth-btn-google { width:100%; background:var(--s2); color:var(--t1); border:1px solid var(--border); border-radius:var(--r2); padding:15px; font-size:15px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:18px; transition:all .15s; }
+
+  .nav-logo-ico { display:block; border-radius:5px; }
+  .nav-btn.active .nav-logo-ico { box-shadow:0 0 0 1.5px rgba(79,142,247,.4); border-radius:6px; filter:brightness(1.1); }
+
+  @media(min-width:600px){.app{max-width:480px;margin:0 auto;box-shadow:0 0 80px rgba(0,0,0,.9)}html,body,#root{background:#05050a}}
+  @media(max-width:360px){.pay-grid{grid-template-columns:repeat(2,1fr)!important}.field-row{grid-template-columns:1fr!important}.kpi-grid{grid-template-columns:1fr 1fr!important}.mini-grid{grid-template-columns:1fr 1fr!important}.page{padding:16px 14px calc(110px + env(safe-area-inset-bottom))}}
+  @media(min-height:812px){.page{padding:24px 18px calc(130px + env(safe-area-inset-bottom))}}
+  .toast-stack {
+    position:fixed; left:50%; transform:translateX(-50%);
+    bottom:calc(80px + env(safe-area-inset-bottom));
+    display:flex; flex-direction:column; gap:8px;
+    z-index:9999; pointer-events:none;
+    width:min(360px, calc(100vw - 32px));
+  }
+  .toast {
+    pointer-events:auto;
+    background:rgba(18,23,34,.96);
+    backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+    border:1px solid rgba(255,255,255,.08);
+    color:var(--t1);
+    border-radius:14px;
+    padding:12px 16px;
+    font-size:13px; font-weight:600;
+    box-shadow:0 12px 40px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.02) inset;
+    display:flex; align-items:center; gap:10px;
+    animation:toastIn .28s cubic-bezier(.2,.9,.3,1.2) both;
+    letter-spacing:-.1px;
+  }
+  .toast.leaving { animation:toastOut .24s ease-in both; }
+  .toast-icon { font-size:16px; flex-shrink:0; }
+  .toast.success { border-left:3px solid var(--green); }
+  .toast.warn    { border-left:3px solid var(--amber); }
+  .toast.error   { border-left:3px solid var(--red); }
+  .toast.info    { border-left:3px solid var(--blue); }
+  @keyframes toastIn  { from{opacity:0;transform:translateY(12px) scale(.96)} to{opacity:1;transform:translateY(0) scale(1)} }
+  @keyframes toastOut { from{opacity:1;transform:translateY(0)} to{opacity:0;transform:translateY(-8px)} }
+
+  .num-anim {
+    display:inline-block;
+    transition:color .2s ease;
+  }
+  .num-anim.flash-up   { animation:numFlashUp .5s ease; }
+  .num-anim.flash-down { animation:numFlashDown .5s ease; }
+  @keyframes numFlashUp   { 0%{color:var(--green);transform:scale(1.06)} 100%{color:inherit;transform:scale(1)} }
+  @keyframes numFlashDown { 0%{color:var(--red);transform:scale(.95)}    100%{color:inherit;transform:scale(1)} }
+
+  .t-label {
+    font-size:10px; font-weight:800; letter-spacing:1.4px;
+    text-transform:uppercase; color:var(--t3);
+  }
+  .t-meta {
+    font-size:11px; font-weight:600; color:var(--t2); letter-spacing:.1px;
+  }
+  .t-body {
+    font-size:14px; font-weight:500; color:var(--t1); letter-spacing:-.1px;
+  }
+  .t-subhead {
+    font-size:20px; font-weight:700; color:var(--t1);
+    letter-spacing:-.5px; line-height:1;
+  }
+  .t-hero {
+    font-size:56px; font-weight:800; color:var(--t1);
+    letter-spacing:-2.2px; line-height:.95;
+    font-feature-settings:"tnum" 1, "lnum" 1;
+  }
+  .num {
+    font-family:"IBM Plex Mono",monospace;
+    font-feature-settings:"tnum" 1, "lnum" 1;
+    font-variant-numeric:tabular-nums;
+  }
+
+  .hero-amount {
+    font-family:"IBM Plex Mono",monospace;
+    font-size:64px; font-weight:800; line-height:.95;
+    letter-spacing:-3px;
+    color:var(--t1);
+    font-feature-settings:"tnum" 1, "lnum" 1;
+    font-variant-numeric:tabular-nums;
+    background:linear-gradient(180deg,#fff 0%,#cfd9ff 90%);
+    -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent;
+    transition:transform .3s cubic-bezier(.34,1.56,.64,1), filter .3s;
+    will-change:transform;
+  }
+  .hero-amount .currency {
+    font-size:32px; font-weight:600;
+    vertical-align:top; margin-right:4px;
+    background:linear-gradient(180deg,#cfd9ff 0%,#8a9bd6 100%);
+    -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent;
+    letter-spacing:0;
+  }
+  .hero-amount.target-hit {
+    animation:targetHit .9s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes targetHit {
+    0%   { transform:scale(1);    filter:brightness(1); }
+    35%  { transform:scale(1.06); filter:brightness(1.4) drop-shadow(0 0 16px rgba(34,197,94,.6)); }
+    100% { transform:scale(1);    filter:brightness(1); }
+  }
+  .hero-amount.ticker-up { animation:tickerUp .35s ease-out; }
+  @keyframes tickerUp {
+    0%   { filter:brightness(1.5) drop-shadow(0 0 12px rgba(79,142,247,.5)); }
+    100% { filter:brightness(1) drop-shadow(0 0 0 transparent); }
+  }
+
+  .premium-section-head {
+    display:flex; align-items:baseline; justify-content:space-between;
+    padding:24px 4px 12px;
+  }
+  .premium-section-head .ttl {
+    font-size:11px; font-weight:800; letter-spacing:1.6px;
+    text-transform:uppercase; color:var(--t3);
+  }
+  .premium-section-head .meta {
+    font-size:11px; font-weight:600; color:var(--t3);
+    font-family:"IBM Plex Mono",monospace;
+  }
+
+  .empty-premium {
+    text-align:center; padding:60px 24px;
+  }
+  .empty-premium .icon {
+    font-size:54px; opacity:.55; margin-bottom:14px;
+    filter:drop-shadow(0 4px 12px rgba(79,142,247,.2));
+  }
+  .empty-premium .title {
+    font-size:17px; font-weight:700; color:var(--t1);
+    letter-spacing:-.3px; margin-bottom:6px;
+  }
+  .empty-premium .sub {
+    font-size:13px; color:var(--t2); max-width:260px; margin:0 auto;
+    line-height:1.5;
+  }
+
+  .premium-grain::before {
+    content:""; position:absolute; inset:0; pointer-events:none;
+    opacity:.025; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+  if (typeof firebase === "undefined") {
+    document.write('<script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-app-compat.js"><\/script>');
+    document.write('<script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-auth-compat.js"><\/script>');
+    document.write('<script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-firestore-compat.js"><\/script>');
+  }
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/htm@3.1.1/dist/htm.umd.js"></script>
+<script>
+  if (typeof htm === "undefined") {
+    document.write('<script src="https://cdn.jsdelivr.net/npm/htm@3.1.1/dist/htm.umd.js"><\/script>');
+  }
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+'use strict';
+
+// ── Bootstrap dependency check ──
+(function checkDeps() {
+  const required = [];
+  if (typeof React === "undefined")    required.push("React");
+  if (typeof ReactDOM === "undefined") required.push("ReactDOM");
+  if (typeof htm === "undefined")      required.push("htm");
+  if (required.length) {
+    const root = document.getElementById("root");
+    if (root) {
+      root.innerHTML =
+        '<div style="height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0a0a0f;color:#f0f0fa;padding:24px;text-align:center;font-family:system-ui,sans-serif;">'
+        + '<div style="font-size:40px;margin-bottom:12px;">⚠️</div>'
+        + '<div style="font-size:18px;font-weight:700;margin-bottom:8px;">Network error</div>'
+        + '<div style="font-size:13px;color:#8888a8;max-width:320px;line-height:1.5;">'
+        +   'Could not load required libraries: <strong>' + required.join(", ") + '</strong>.<br>'
+        +   'Check your connection and refresh.'
+        + '</div>'
+        + '<button onclick="location.reload()" style="margin-top:20px;background:linear-gradient(135deg,#5a97ff,#3d7ef5);color:#fff;border:none;border-radius:12px;padding:14px 28px;font-size:15px;font-weight:700;cursor:pointer;">Reload</button>'
+        + '</div>';
+    }
+    throw new Error("N&K On Time: missing required dependencies — " + required.join(", "));
+  }
+  if (typeof firebase === "undefined") {
+    console.warn("[N&K On Time] Firebase did not load — running in local-only mode. Cloud sync disabled.");
+  }
+})();
+
+const html = htm.bind(React.createElement);
+const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+// Firebase web config for N & K On Time Mobile Tires LLC.
+// The apiKey is intentionally public — it identifies the project, not the user.
+// Real security is enforced by Firestore Rules + UID allowlist.
+const FB_CFG = {
+  apiKey:            "AIzaSyC47qS0Ypse6H4UiCA8htvI6uAY4oSaTEo",
+  authDomain:        "nkontimemobiletires-160d9.firebaseapp.com",
+  projectId:         "nkontimemobiletires-160d9",
+  storageBucket:     "nkontimemobiletires-160d9.firebasestorage.app",
+  messagingSenderId: "974188763657",
+  appId:             "1:974188763657:web:83ade3a0502962f4d636d8"
+};
+let _app, _db, _auth;
+(function initFB() {
+  try {
+    _app  = firebase.apps.length ? firebase.apps[0] : firebase.initializeApp(FB_CFG);
+    _db   = firebase.firestore();
+    _auth = firebase.auth();
+  } catch(e) { console.warn("Firebase init:", e); }
+})();
+const invCol     = () => _db ? _db.collection("nk_inventory") : null;
+const jobCol     = () => _db ? _db.collection("nk_jobs")      : null;
+const expCol     = () => _db ? _db.collection("nk_expenses")  : null;
+const settingDoc = () => _db ? _db.collection("nk_settings").doc("main") : null;
+async function fbSet(col, id, data) {
+  if (!col) return;
+  const clean = {};
+  Object.keys(data || {}).forEach(k => {
+    const v = data[k];
+    if (v === undefined) return;
+    if (v === null)                       { clean[k] = null; return; }
+    if (typeof v === "object")            { clean[k] = JSON.stringify(v); return; }
+    clean[k] = v;
+  });
+  clean.id = String(id);
+  try { await col.doc(String(id)).set(clean); } catch(e) { console.warn("fbSet:", e); }
+}
+function safeParse(v) {
+  if (v === null || v === undefined) return v;
+  if (typeof v !== "string") return v;
+  try { return JSON.parse(v); } catch { return v; }
+}
+function hydrateJobDoc(doc) {
+  if (!doc || typeof doc !== "object") return doc;
+  const out = {...doc};
+  if (typeof out.inventoryDeductions === "string") {
+    out.inventoryDeductions = safeParse(out.inventoryDeductions);
+  }
+  if (!Array.isArray(out.inventoryDeductions)) out.inventoryDeductions = null;
+  if (typeof out.inventoryUsed === "string") {
+    out.inventoryUsed = safeParse(out.inventoryUsed);
+  }
+  if (!out.inventoryUsed || typeof out.inventoryUsed !== "object") out.inventoryUsed = null;
+  return out;
+}
+function hydrateSettingsDoc(doc) {
+  if (!doc || typeof doc !== "object") return doc;
+  const out = {...doc};
+  Object.keys(out).forEach(k => {
+    const v = out[k];
+    if (typeof v === "string" && (v.startsWith("{") || v.startsWith("["))) {
+      const parsed = safeParse(v);
+      if (parsed && typeof parsed === "object") out[k] = parsed;
+    }
+  });
+  return out;
+}
+async function fbDel(col, id) {
+  if (!col) return;
+  try { await col.doc(String(id)).delete(); } catch(e) {}
+}
+function fbListen(col, cb) {
+  if (!col) { cb([]); return () => {}; }
+  let timer = null;
+  let pendingDocs = null;
+  const unsub = col.onSnapshot(
+    s => {
+      pendingDocs = s.docs.map(d => ({...d.data(), id: d.id}));
+      if (timer) return;
+      timer = setTimeout(() => {
+        const docs = pendingDocs;
+        pendingDocs = null;
+        timer = null;
+        cb(docs);
+      }, 250);
+    },
+    e => console.warn("fbListen error (keeping local state):", e)
+  );
+  return () => {
+    if (timer) { clearTimeout(timer); timer = null; }
+    unsub();
+  };
+}
+
+const isLocalUser = u => !u || u.uid === "local";
+async function fbBatch(ops) {
+  if (!_db) return;
+  try {
+    const b = _db.batch();
+    ops.forEach(op => {
+      if (op.type === "set")    b.set(op.ref, op.data);
+      else if (op.type === "delete") b.delete(op.ref);
+    });
+    await b.commit();
+  } catch(e) { console.warn("fbBatch:", e); }
+}
+
+// ── Tire size normalization ──────────────────────────────────────────────────
+function normalizeTireSize(s) {
+  if (!s) return "";
+  const m = String(s).match(/(\d{3})\s*[\/\-\s]+\s*(\d{2,3})\s*[\/\-\s]*\s*R?\s*(\d{2})/i);
+  if (!m) return "";
+  return m[1] + "/" + m[2] + "R" + m[3];
+}
+
+function planInventoryDeduction(inventory, tireSize, qtyNeeded, preferredId) {
+  const targetSize = normalizeTireSize(tireSize);
+  if (!targetSize || !qtyNeeded || qtyNeeded <= 0) return null;
+
+  const candidates = (inventory || [])
+    .filter(i => normalizeTireSize(i.size) === targetSize && (Number(i.qty) || 0) > 0);
+
+  if (candidates.length === 0) return null;
+
+  const sorted = candidates.slice().sort((a, b) => {
+    const ac = (String(a.condition||"new").toLowerCase() === "new") ? 0 : 1;
+    const bc = (String(b.condition||"new").toLowerCase() === "new") ? 0 : 1;
+    if (ac !== bc) return ac - bc;
+    return (Number(b.qty) || 0) - (Number(a.qty) || 0);
+  });
+
+  const ordered = preferredId
+    ? [
+        ...sorted.filter(r => String(r.id) === String(preferredId)),
+        ...sorted.filter(r => String(r.id) !== String(preferredId)),
+      ]
+    : sorted;
+
+  const plan = [];
+  let remaining = qtyNeeded;
+  for (const row of ordered) {
+    if (remaining <= 0) break;
+    const have = Number(row.qty) || 0;
+    const take = Math.min(have, remaining);
+    plan.push({
+      id: String(row.id),
+      size: String(row.size || ""),
+      condition: String(row.condition || "New"),
+      before: have,
+      deducted: take,
+      after: have - take,
+    });
+    remaining -= take;
+  }
+
+  return { plan, totalDeducted: qtyNeeded - remaining, shortfall: remaining };
+}
+
+function applyInventoryDeduction(plan, setInventory) {
+  if (!plan || !Array.isArray(plan.plan) || plan.plan.length === 0) return;
+  const byId = {};
+  plan.plan.forEach(step => { byId[step.id] = step.after; });
+  setInventory(prev => {
+    const arr = Array.isArray(prev) ? prev : [];
+    return arr.map(i => byId[i.id] !== undefined ? {...i, qty: byId[i.id]} : i);
+  });
+}
+
+function restoreInventoryDeduction(deductions, setInventory) {
+  if (!Array.isArray(deductions) || deductions.length === 0) return;
+  const addMap = {};
+  deductions.forEach(d => { addMap[d.id] = (addMap[d.id] || 0) + (Number(d.deducted) || 0); });
+  setInventory(prev => {
+    const arr = Array.isArray(prev) ? prev : [];
+    return arr.map(i => addMap[i.id] ? {...i, qty: (Number(i.qty)||0) + addMap[i.id]} : i);
+  });
+}
+
+// ── localStorage keys (renamed to nk_ namespace) ─────────────────────────────
+const KEYS = {
+  jobs: "nk-jobs-v2", settings: "nk-settings-v2",
+  inventory: "nk-inventory-v2", expenses: "nk-expenses-v1",
+  sizes: "nk-recent-sizes-v1", cities: "nk-recent-cities-v1",
+  calls: "nk-calls-v1",
+};
+const load    = (k, fb) => { try { const r = localStorage.getItem(k); return r ? JSON.parse(r) : fb; } catch { return fb; } };
+const persist = (k, v)  => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+
+const LOGO_SRC = "data:image/png;base64,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";
+
+// LOGO_SRC will be inserted before this section (see logo_line.txt — N&K placeholder PNG).
+// To replace with the real logo: convert your N&K On Time logo image to a base64 data URL
+// (https://www.base64-image.de/) and set LOGO_SRC to that data URL string.
+
+const TODAY    = () => new Date().toLocaleDateString("en-CA", {timeZone:"America/New_York"});
+const NOW_HHMM = () => {
+  const d = new Date();
+  const f = new Intl.DateTimeFormat("en-US", { timeZone:"America/New_York", hour12:false, hour:"2-digit", minute:"2-digit" });
+  return f.format(d).replace(/^24/, "00");
+};
+const fmtTime = (hhmm) => {
+  if (!hhmm || typeof hhmm !== "string") return "";
+  const m = hhmm.match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return "";
+  let h = Number(m[1]); const mins = m[2];
+  const ap = h >= 12 ? "PM" : "AM";
+  h = h % 12; if (h === 0) h = 12;
+  return h + ":" + mins + " " + ap;
+};
+
+const haptic = (ms = 10) => { try { if (navigator.vibrate) navigator.vibrate(ms); } catch(e) {} };
+
+function useCountUp(target, durationMs = 700) {
+  const [value, setValue] = useState(0);
+  const startedRef = useRef(false);
+  useEffect(() => {
+    if (startedRef.current) {
+      setValue(target);
+      return;
+    }
+    startedRef.current = true;
+    const t0 = performance.now();
+    let raf = 0;
+    const tick = (now) => {
+      const elapsed = now - t0;
+      const p = Math.min(1, elapsed / durationMs);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setValue(target * eased);
+      if (p < 1) raf = requestAnimationFrame(tick);
+      else setValue(target);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target]);
+  return value;
+}
+const uid      = () => (typeof crypto !== "undefined" && crypto.randomUUID)
+  ? crypto.randomUUID().replace(/-/g,"").slice(0,16)
+  : Date.now().toString(36) + Math.random().toString(36).slice(2,10);
+const r2       = n  => Math.round((Number(n||0) + Number.EPSILON) * 100) / 100;
+const money    = n  => new Intl.NumberFormat("en-US", {style:"currency", currency:"USD"}).format(Number(n||0));
+const clamp    = (n,lo,hi) => Math.min(hi, Math.max(lo, n));
+
+// ── Service catalog (expanded for N & K On Time's offerings) ─────────────────
+const SERVICE_KEYS = [
+  "Flat Tire Repair",
+  "Plug & Patch Repair",
+  "Tire Replacement",
+  "Tire Installation",
+  "Mobile Mount & Balance",
+  "Tire Rotation",
+  "Mobile Tire Service",
+  "Roadside Assistance",
+  "Commercial / Fleet Service",
+  "Semi-Truck Tire Service",
+  "RV Tire Service",
+  "Spare Tire Change",
+  "Jump Start",
+  "Other",
+];
+const VEHICLE_TYPES = ["Car","SUV / Truck","Semi-Truck","Tractor-Trailer","RV / Motorhome"];
+const SERVICE_OPTIONS = SERVICE_KEYS.slice();
+const PAYMENT_OPTIONS = [{label:"Cash",icon:"💵"},{label:"Zelle",icon:"🟣"},{label:"Card",icon:"💳"},{label:"Cash App",icon:"🟢"},{label:"Venmo",icon:"💙"},{label:"Check",icon:"✍️"}];
+const SOURCE_QUICK    = [{label:"Google",icon:"🔍"},{label:"Google Maps",icon:"🗺"},{label:"TikTok",icon:"🎵"},{label:"ChatGPT",icon:"🤖"},{label:"Referral",icon:"🤝"},{label:"Returning Customer",icon:"🔁"},{label:"Roadside Flag",icon:"🚗"}];
+
+const SERVICE_SHORTNAMES = {
+  "Mobile Tire Service":         "Mobile",
+  "Flat Tire Repair":            "Repair",
+  "Plug & Patch Repair":         "Plug",
+  "Tire Replacement":            "Replace",
+  "Tire Installation":           "Install",
+  "Mobile Mount & Balance":      "M&B",
+  "Tire Rotation":               "Rotation",
+  "Roadside Assistance":         "Roadside",
+  "Commercial / Fleet Service":  "Fleet",
+  "Semi-Truck Tire Service":     "Semi",
+  "RV Tire Service":             "RV",
+  "Spare Tire Change":           "Spare",
+  "Jump Start":                  "Jump",
+};
+const shortService = name => SERVICE_SHORTNAMES[name] || name;
+const FLAGS           = [["emergency","🚨 Emergency",20],["lateNight","🌙 Late Night",20],["highway","🛣 Highway",15],["weekend","📅 Weekend",10]];
+
+// ── TOP_CITIES rebuilt around N & K On Time's Lauderhill HQ + service area ──
+const TOP_CITIES      = ["Lauderhill","Fort Lauderdale","Plantation","Sunrise","Coral Springs","Margate","Boca Raton","Parkland","North Lauderdale","Hollywood"];
+
+const DEFAULT_TIRE_SIZES = ["245/40R18","225/65R17","225/60R18","215/55R16","255/50R17","225/55R18","235/40R19","245/50R20","275/35R21","275/40R22","275/50R22","195/60R16"];
+const DEFAULT_INVENTORY = [
+  {id:"inv001",size:"195/55R15",qty:1,cost:0,notes:""},{id:"inv002",size:"185/55R16",qty:1,cost:0,notes:""},{id:"inv003",size:"195/60R16",qty:3,cost:0,notes:""},{id:"inv004",size:"205/55R16",qty:1,cost:0,notes:""},{id:"inv005",size:"205/60R16",qty:1,cost:0,notes:""},{id:"inv006",size:"215/55R16",qty:4,cost:0,notes:""},{id:"inv007",size:"215/65R16",qty:1,cost:0,notes:""},{id:"inv008",size:"225/50R16",qty:1,cost:0,notes:""},{id:"inv009",size:"235/65R16",qty:1,cost:0,notes:""},{id:"inv010",size:"205/40R17",qty:1,cost:0,notes:""},{id:"inv011",size:"215/45R17",qty:1,cost:0,notes:""},{id:"inv012",size:"225/60R17",qty:1,cost:0,notes:""},{id:"inv013",size:"225/65R17",qty:5,cost:0,notes:""},{id:"inv014",size:"235/55R17",qty:1,cost:0,notes:""},{id:"inv015",size:"245/55R17",qty:1,cost:0,notes:""},{id:"inv016",size:"245/65R17",qty:1,cost:0,notes:""},{id:"inv017",size:"255/50R17",qty:3,cost:0,notes:""},{id:"inv018",size:"255/65R17",qty:1,cost:0,notes:""},{id:"inv019",size:"265/70R17",qty:1,cost:0,notes:""},{id:"inv020",size:"215/40R18",qty:1,cost:0,notes:""},{id:"inv021",size:"225/50R18",qty:2,cost:0,notes:""},{id:"inv022",size:"225/55R18",qty:3,cost:0,notes:""},{id:"inv023",size:"225/60R18",qty:5,cost:0,notes:""},{id:"inv024",size:"245/40R18",qty:6,cost:0,notes:""},{id:"inv025",size:"255/55R18",qty:1,cost:0,notes:""},{id:"inv026",size:"255/60R18",qty:1,cost:0,notes:""},{id:"inv027",size:"225/35R19",qty:1,cost:0,notes:""},{id:"inv028",size:"225/40R19",qty:1,cost:0,notes:""},{id:"inv029",size:"235/40R19",qty:3,cost:0,notes:""},{id:"inv030",size:"235/45R19",qty:1,cost:0,notes:""},{id:"inv031",size:"235/50R19",qty:1,cost:0,notes:""},{id:"inv032",size:"235/55R19",qty:1,cost:0,notes:""},{id:"inv033",size:"285/40R19",qty:2,cost:0,notes:""},{id:"inv034",size:"235/50R20",qty:1,cost:0,notes:""},{id:"inv035",size:"245/35R20",qty:1,cost:0,notes:""},{id:"inv036",size:"245/50R20",qty:3,cost:0,notes:""},{id:"inv037",size:"255/50R20",qty:1,cost:0,notes:""},{id:"inv038",size:"275/45R20",qty:1,cost:0,notes:""},{id:"inv039",size:"285/45R20",qty:1,cost:0,notes:""},{id:"inv040",size:"295/30R20",qty:1,cost:0,notes:""},{id:"inv041",size:"315/55R20",qty:1,cost:0,notes:""},{id:"inv042",size:"255/35R21",qty:2,cost:0,notes:""},{id:"inv043",size:"255/40R21",qty:2,cost:0,notes:""},{id:"inv044",size:"275/35R21",qty:3,cost:0,notes:""},{id:"inv045",size:"295/35R21",qty:1,cost:0,notes:""},{id:"inv046",size:"325/30R21",qty:2,cost:0,notes:""},{id:"inv047",size:"275/40R22",qty:3,cost:0,notes:""},{id:"inv048",size:"275/50R22",qty:3,cost:0,notes:""},{id:"inv049",size:"285/40R22",qty:1,cost:0,notes:""},{id:"inv050",size:"285/45R22",qty:2,cost:0,notes:""},{id:"inv051",size:"315/35R22",qty:2,cost:0,notes:""},{id:"inv052",size:"325/30R23",qty:1,cost:0,notes:""},
+];
+const DEFAULT_SERVICE_PRICING = {
+  "Flat Tire Repair":            {enabled:true, basePrice:90,  minProfit:90},
+  "Plug & Patch Repair":         {enabled:true, basePrice:90,  minProfit:80},
+  "Tire Replacement":            {enabled:true, basePrice:120, minProfit:110},
+  "Tire Installation":           {enabled:true, basePrice:120, minProfit:110},
+  "Mobile Mount & Balance":      {enabled:true, basePrice:120, minProfit:100},
+  "Tire Rotation":               {enabled:true, basePrice:80,  minProfit:60},
+  "Mobile Tire Service":         {enabled:true, basePrice:150, minProfit:110},
+  "Roadside Assistance":         {enabled:true, basePrice:100, minProfit:70},
+  "Commercial / Fleet Service":  {enabled:true, basePrice:300, minProfit:240},
+  "Semi-Truck Tire Service":     {enabled:true, basePrice:350, minProfit:280},
+  "RV Tire Service":             {enabled:true, basePrice:200, minProfit:160},
+  "Spare Tire Change":           {enabled:true, basePrice:95,  minProfit:70},
+  "Jump Start":                  {enabled:true, basePrice:85,  minProfit:60},
+};
+const DEFAULT_VEHICLE_PRICING = {
+  "Car":              {addOnProfit:0},
+  "SUV / Truck":      {addOnProfit:20},
+  "Semi-Truck":       {addOnProfit:80},
+  "Tractor-Trailer":  {addOnProfit:120},
+  "RV / Motorhome":   {addOnProfit:60},
+};
+const DEFAULT_SETTINGS = {
+  businessName:"N & K On Time Mobile Tires LLC", owner1Name:"Owner 1", owner2Name:"Owner 2",
+  owner1Active:true, owner2Active:true, profitSplit1:50, profitSplit2:50,
+  weeklyGoal:1200, taxRate:25, repairTarget:90, replacementTarget:110,
+  skipThreshold:70, riskyMiles:25, costPerMile:0.65,
+  defaultTargetProfit:100,
+  // Update this once you have a Google Business Profile review link for N & K On Time:
+  googleReviewUrl:"",
+  servicePricing: DEFAULT_SERVICE_PRICING,
+  vehiclePricing: DEFAULT_VEHICLE_PRICING,
+  expenses:[
+    {id:"e1",name:"Van Insurance",amount:434,active:true},{id:"e2",name:"Marketing",amount:599,active:true},
+    {id:"e3",name:"Google PPC",amount:750,active:true},{id:"e4",name:"Phone Bill",amount:250,active:true},
+    {id:"e5",name:"Storage",amount:160,active:true},{id:"e6",name:"Equipment Payment",amount:232.37,active:true},
+  ],
+};
+const EMPTY_JOB = () => ({
+  id:"", date:TODAY(), startTime:"", service:"Flat Tire Repair", vehicleType:"Car",
+  area:"Lauderhill", payment:"Cash",
+  status:"Completed", source:"Google", customerName:"", customerPhone:"",
+  tireSize:"", qty:1, revenue:"", tireCost:"", miscCost:"", miles:"", note:"",
+  emergency:false, lateNight:false, highway:false, weekend:false,
+  tireSource:"Inventory",
+  tireBrand:"", tireModel:"", tireVendor:"",
+  saveToInventory:false,
+  inventoryItemId:"",
+});
+
+const jobDirectCost  = (j,s) => r2(Number(j.miles||0)*Number(s.costPerMile||0.65)+Number(j.tireCost||0)+Number(j.miscCost||0));
+const jobGrossProfit = (j,s) => r2(Number(j.revenue||0)-jobDirectCost(j,s));
+const weeklyFixed    = s => { const exps=Array.isArray(s.expenses)?s.expenses:[]; return r2(exps.filter(e=>e.active).reduce((t,e)=>t+Number(e.amount||0),0)*12/52); };
+const monthlyFixed   = s => { const exps=Array.isArray(s.expenses)?s.expenses:[]; return exps.filter(e=>e.active).reduce((t,e)=>t+Number(e.amount||0),0); };
+const isTireMaterialService = svc => /replacement|installation|mount.*balance/i.test(String(svc||""));
+
+const INSTALL_FLAT_PRICING = {1:90, 2:140, 3:190, 4:220};
+const installFlatTotal = qty => {
+  const n = Number(qty);
+  const q = (Number.isFinite(n) && n >= 1) ? Math.floor(n) : 1;
+  if (INSTALL_FLAT_PRICING[q]) return INSTALL_FLAT_PRICING[q];
+  return INSTALL_FLAT_PRICING[4] + (q - 4) * 30;
+};
+
+const REPLACEMENT_TIER_PRICING = {1:120, 2:220, 3:320, 4:400};
+const replacementTierTotal = qty => {
+  const n = Number(qty);
+  const q = (Number.isFinite(n) && n >= 1) ? Math.floor(n) : 1;
+  if (REPLACEMENT_TIER_PRICING[q]) return REPLACEMENT_TIER_PRICING[q];
+  return REPLACEMENT_TIER_PRICING[4] + (q - 4) * 100;
+};
+
+const isWeSupplyTireJob = j => {
+  if (!j) return false;
+  if (!isTireMaterialService(j.service)) return false;
+  if (isCustomerSuppliedInstall(j)) return false;
+  return true;
+};
+
+const isCustomerSuppliedInstall = j =>
+  /installation|mount.*balance/i.test(String(j && j.service || "")) &&
+  String(j && j.tireSource || "") === "Customer supplied";
+
+function distancePremium(miles) {
+  const m = Number(miles||0);
+  if (m <= 10) return 0;
+  if (m <= 25) return 15;
+  return 35;
+}
+
+function premiums(j) {
+  if (!j) return 0;
+  let p = 0;
+  if (j.emergency) p += 20;
+  if (j.lateNight) p += 20;
+  if (j.highway)   p += 15;
+  if (j.weekend)   p += 10;
+  if (j.difficulty === "medium") p += 15;
+  if (j.difficulty === "high")   p += 30;
+  return p;
+}
+
+function getServicePricing(service, s) {
+  const sp = (s && s.servicePricing) || DEFAULT_SERVICE_PRICING;
+  return sp[service] || DEFAULT_SERVICE_PRICING[service] || {enabled:true, basePrice:90, minProfit:60};
+}
+function getVehicleAddOn(vehicleType, s) {
+  const vp = (s && s.vehiclePricing) || DEFAULT_VEHICLE_PRICING;
+  const v  = vp[vehicleType] || DEFAULT_VEHICLE_PRICING[vehicleType] || {addOnProfit:0};
+  return Number(v.addOnProfit || 0);
+}
+
+function calculateJobPricing(job, settings) {
+  const s = settings || {};
+  const j = job || {};
+  const costPerMile = Math.max(0, Number(s.costPerMile || 0.65));
+
+  const miles       = Math.max(0, Number(j.miles || 0));
+  const qty         = Math.max(1, Number(j.qty || 1));
+  const tireCost    = isCustomerSuppliedInstall(j)
+    ? 0
+    : Math.max(0, Number(j.tireCost || 0)) * qty;
+  const miscCost    = Math.max(0, Number(j.miscCost || 0));
+  const trivialDistance = miles <= 1;
+  const travelCost  = trivialDistance ? 0 : r2(miles * costPerMile);
+  const directCost  = r2(tireCost + miscCost + travelCost);
+  const revenue     = Math.max(0, Number(j.revenue || 0));
+  const actualProfit= r2(revenue - directCost);
+
+  const svcRule    = getServicePricing(j.service, s);
+  const vehicleAdd = Math.max(0, getVehicleAddOn(j.vehicleType, s));
+  const baseTarget = (svcRule && svcRule.minProfit != null && !isNaN(Number(svcRule.minProfit)))
+    ? Number(svcRule.minProfit)
+    : Number(s.defaultTargetProfit || 100);
+
+  const isFlatInstall = isCustomerSuppliedInstall(j);
+  const isWeSupply    = isWeSupplyTireJob(j);
+
+  let targetProfit;
+  if (isFlatInstall) {
+    targetProfit = installFlatTotal(qty) + vehicleAdd;
+  } else if (isWeSupply) {
+    targetProfit = replacementTierTotal(qty) + vehicleAdd;
+  } else {
+    targetProfit = baseTarget + vehicleAdd;
+  }
+
+  const distanceAdj   = distancePremium(miles);
+  const urgencyBase   = premiums(j);
+  const urgencyPremium= urgencyBase + distanceAdj;
+
+  const raw = directCost + targetProfit + urgencyPremium;
+  const suggestedPrice = Math.ceil(raw / 5) * 5;
+
+  const premiumPrice = Math.ceil((suggestedPrice + 20) / 5) * 5;
+
+  const skip = Number(s.skipThreshold || 70);
+  let decisionLabel = "Take it";
+  let decisionType  = "take";
+  if (isTireMaterialService(j.service) && (j.tireSource === "Bought for this job") && tireCost <= 0) {
+    decisionLabel = "Missing tire cost";
+    decisionType  = "missing";
+  } else if (revenue > 0 && actualProfit < skip) {
+    decisionLabel = "Low margin — increase price";
+    decisionType  = "low";
+  } else if (distanceAdj >= 35) {
+    decisionLabel = "High distance — premium applied";
+    decisionType  = "distance";
+  } else if (revenue > 0 && actualProfit >= skip + 40) {
+    decisionLabel = "Strong profit — take it";
+    decisionType  = "strong";
+  } else if (revenue === 0) {
+    decisionLabel = "Estimated price";
+    decisionType  = "estimate";
+  }
+
+  return {
+    revenue, tireCost, miscCost, travelCost, directCost,
+    targetProfit, urgencyPremium, distanceAdj, baseTarget, vehicleAdd,
+    suggestedPrice, premiumPrice, actualProfit,
+    decisionLabel, decisionType,
+  };
+}
+
+function suggestedPrice(j, s) {
+  return calculateJobPricing(j, s).suggestedPrice;
+}
+function getWeekStart(d) {
+  const dt = new Date(d+"T12:00:00"), day = dt.getDay();
+  dt.setDate(dt.getDate()-(day>=5?day-5:day+2));
+  return dt.toLocaleDateString("en-CA",{timeZone:"America/New_York"});
+}
+function weekLabel(s) {
+  const d = new Date(s+"T12:00:00"), e = new Date(d);
+  e.setDate(e.getDate()+6);
+  const f = dt => dt.toLocaleDateString("en-US",{timeZone:"America/New_York",month:"short",day:"numeric"});
+  return f(d)+" – "+f(e)+", "+e.toLocaleDateString("en-US",{timeZone:"America/New_York",year:"numeric"}).split("/")[2];
+}
+function nextFriday() {
+  const now = new Date();
+  const dayStr = now.toLocaleDateString("en-US",{timeZone:"America/New_York",weekday:"short"});
+  const dm = {Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6};
+  const day = dm[dayStr.slice(0,3)];
+  const offset = day === 5 ? 7 : ((5 - day + 7) % 7);
+  const fri = new Date(now); fri.setDate(fri.getDate() + offset);
+  return fri.toLocaleDateString("en-US",{timeZone:"America/New_York",weekday:"short",month:"short",day:"numeric"});
+}
+function groupByWeek(jobs) {
+  const map = {};
+  [...(jobs||[])].sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id))
+    .forEach(j => { const k=getWeekStart(j.date); if(!map[k]) map[k]=[]; map[k].push(j); });
+  return Object.entries(map).sort((a,b)=>b[0].localeCompare(a[0]));
+}
+const getMonthKey = d => String(d||"").slice(0,7);
+function monthLabel(key) {
+  const [y,m] = String(key||"").split("-");
+  if (!y || !m) return key || "";
+  const dt = new Date(Number(y), Number(m)-1, 1);
+  return dt.toLocaleDateString("en-US",{timeZone:"America/New_York",month:"long",year:"numeric"});
+}
+function groupByMonth(jobs) {
+  const map = {};
+  [...(jobs||[])].sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id))
+    .forEach(j => { const k=getMonthKey(j.date); if(!k) return; if(!map[k]) map[k]=[]; map[k].push(j); });
+  return Object.entries(map).sort((a,b)=>b[0].localeCompare(a[0]));
+}
+function weekSummary(weekJobs,s) {
+  const jobs = Array.isArray(weekJobs)?weekJobs:[];
+  const revenue     = r2(jobs.reduce((t,j)=>t+Number(j.revenue||0),0));
+  const directCosts = r2(jobs.reduce((t,j)=>t+jobDirectCost(j,s),0));
+  const grossProfit = r2(revenue-directCosts);
+  return {revenue,directCosts,grossProfit,net:grossProfit,fixed:0};
+}
+
+function monthSummary(monthJobs,s) {
+  const jobs = Array.isArray(monthJobs)?monthJobs:[];
+  const revenue     = r2(jobs.reduce((t,j)=>t+Number(j.revenue||0),0));
+  const tireCosts   = r2(jobs.reduce((t,j)=>t+Number(j.tireCost||0),0));
+  const miscCosts   = r2(jobs.reduce((t,j)=>t+Number(j.miscCost||0),0));
+  const travelCosts = r2(jobs.reduce((t,j)=>t+Number(j.miles||0)*Number(s.costPerMile||0.65),0));
+  const directCosts = r2(tireCosts+miscCosts+travelCosts);
+  const grossProfit = r2(revenue-directCosts);
+  const fixed       = monthlyFixed(s);
+  const net         = r2(grossProfit-fixed);
+  return {revenue,tireCosts,miscCosts,travelCosts,directCosts,grossProfit,fixed,net};
+}
+function dedupeInventory(items) {
+  const seen = {};
+  (items||[]).filter(i=>(i.size||"").trim()).forEach(i => {
+    const cond = (String(i.condition||"").toLowerCase() === "used") ? "used" : "new";
+    const key = i.size.toLowerCase().replace(/\s+/g,"") + "|" + cond;
+    if (!seen[key]) {
+      seen[key] = {...i, qty: Number(i.qty||0)};
+    } else {
+      seen[key].qty += Number(i.qty||0);
+      if (!seen[key].cost && i.cost) seen[key].cost = i.cost;
+    }
+  });
+  return Object.values(seen);
+}
+function sanitizeJob(j) {
+  if (j === null || j === undefined || typeof j !== "object") j = {};
+  const src = String(j.tireSource||"Inventory");
+  const validSrc = ["Inventory","Bought for this job","Customer supplied"].includes(src) ? src : "Inventory";
+
+  let inventoryDeductions = j.inventoryDeductions;
+  if (typeof inventoryDeductions === "string") {
+    try { inventoryDeductions = JSON.parse(inventoryDeductions); } catch { inventoryDeductions = null; }
+  }
+  if (!Array.isArray(inventoryDeductions)) inventoryDeductions = null;
+
+  let inventoryUsed = j.inventoryUsed;
+  if (typeof inventoryUsed === "string") {
+    try { inventoryUsed = JSON.parse(inventoryUsed); } catch { inventoryUsed = null; }
+  }
+  if (!inventoryUsed || typeof inventoryUsed !== "object") inventoryUsed = null;
+
+  return {
+    id: String(j.id||uid()), date: String(j.date||TODAY()), startTime: String(j.startTime||""), service: String(j.service||"Flat Tire Repair"),
+    vehicleType: String(j.vehicleType||"Car"),
+    area: String(j.area||"Lauderhill"), payment: String(j.payment||"Cash"), status: String(j.status||"Completed"),
+    source: String(j.source||""), customerName: String(j.customerName||""),
+    customerPhone: String(j.customerPhone||""), tireSize: String(j.tireSize||""),
+    qty: Number(j.qty||1), revenue: Number(j.revenue||0), tireCost: Number(j.tireCost||0),
+    miscCost: Number(j.miscCost||0), miles: Number(j.miles||0), note: String(j.note||""),
+    emergency: !!j.emergency, lateNight: !!j.lateNight, highway: !!j.highway, weekend: !!j.weekend,
+    tireSource: validSrc,
+    tireBrand: String(j.tireBrand||""),
+    tireModel: String(j.tireModel||""),
+    tireVendor: String(j.tireVendor||""),
+    saveToInventory: !!j.saveToInventory,
+    inventoryItemId: String(j.inventoryItemId||""),
+    inventoryDeducted: !!j.inventoryDeducted,
+    inventoryDeductions: inventoryDeductions,
+    inventoryShortfall: Number(j.inventoryShortfall||0),
+    inventoryUsed: inventoryUsed,
+  };
+}
+function sanitizeInvItem(i) {
+  if (i === null || i === undefined || typeof i !== "object") i = {};
+  const rawCond = String(i.condition || "").toLowerCase();
+  const cond = rawCond === "used" ? "Used" : "New";
+  return {
+    id:String(i.id||uid()),
+    size:String(i.size||""),
+    brand:String(i.brand||""),
+    model:String(i.model||""),
+    condition:cond,
+    qty:Math.max(0,Number(i.qty||0)),
+    cost:Number(i.cost||0),
+    sellPrice:Number(i.sellPrice||i.price||0),
+    notes:String(i.notes||""),
+    treadDepth:String(i.treadDepth||""),
+    dotCode:String(i.dotCode||""),
+    createdAt:Number(i.createdAt||Date.now()),
+  };
+}
+
+// ── Review request templates (BRANDED for N & K On Time) ─────────────────────
+const SVC_PHRASES = {
+  "Flat Tire Repair":"flat tire repair",
+  "Plug & Patch Repair":"plug and patch tire repair",
+  "Tire Replacement":"tire replacement",
+  "Tire Installation":"tire installation",
+  "Mobile Mount & Balance":"mobile mount and balance",
+  "Tire Rotation":"tire rotation",
+  "Mobile Tire Service":"mobile tire service",
+  "Roadside Assistance":"roadside assistance",
+  "Commercial / Fleet Service":"fleet tire service",
+  "Semi-Truck Tire Service":"semi-truck tire service",
+  "RV Tire Service":"RV tire service",
+  "Spare Tire Change":"spare tire change",
+  "Jump Start":"jump start service",
+};
+function buildReviewMsg(url,customerName,service,city) {
+  const name=(customerName||"").trim(), greet=name?"Hi "+name+",":"Hi,";
+  const svc=SVC_PHRASES[service]||(service?service.toLowerCase():"mobile tire service");
+  const cityStr=(city||"").trim()||"your area";
+  return greet+" thanks again for choosing N & K On Time Mobile Tires. If you have a minute, please leave a review here:\n\n"+url+"\n\nPlease mention the "+svc+" we did and that we helped you in "+cityStr+".";
+}
+function openReviewSMS(phone,url,customerName,service,city) {
+  if (!url) { alert("Set your Google Review URL in Settings first."); return; }
+  const msg = encodeURIComponent(buildReviewMsg(url,customerName,service,city));
+  window.open((phone?"sms:"+phone:"sms:")+"?body="+msg);
+}
+
+function generateInvoicePDF(job,settings) {
+  const jsPDF = (window.jspdf&&window.jspdf.jsPDF)||window.jsPDF;
+  if (!jsPDF) { alert("PDF library not loaded. Try again in a moment."); return null; }
+  const doc = new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
+  const W=210, M=18, col2=130;
+  const NAVY=[0,20,60], ORANGE=[240,120,0], OFFWHITE=[240,240,222],
+        NEAR_BLK=[20,20,20], GRAY=[110,110,125], LGRAY=[215,215,222], WHITE=[255,255,255];
+
+  // ── Header bar (BRANDED for N & K On Time) ─────────────────────────────────
+  doc.setFillColor(...NAVY);   doc.rect(0,0,W,44,"F");
+  doc.setFillColor(...ORANGE); doc.rect(0,44,W,3,"F");
+  // Logo: try to render data-URL logo; if it fails, fall back to text-only branding.
+  // Wrapped in try/catch because jsPDF.addImage requires the image to be a real PNG;
+  // SVG/text data URLs will throw silently here.
+  try { doc.addImage(LOGO_SRC,"PNG",M,8,24,24); } catch {}
+  doc.setFont("helvetica","bold"); doc.setFontSize(17); doc.setTextColor(...WHITE);
+  doc.text("N & K On Time",M+30,18);
+  doc.setFont("helvetica","bold"); doc.setFontSize(10); doc.setTextColor(255,180,90);
+  doc.text("Mobile Tires",M+30,25);
+  doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(175,200,225);
+  doc.text("24/7 Mobile Tire Service  ·  Lauderhill, FL  ·  (954) 270-5974",M+30,32);
+  // Invoice label + number
+  doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.setTextColor(...ORANGE);
+  doc.text("INVOICE",W-M,20,{align:"right"});
+  const invNum="NK-"+(job.date||"").replace(/-/g,"")+"-"+(job.id||"").slice(-4).toUpperCase();
+  doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(175,200,225);
+  doc.text("#"+invNum,W-M,28,{align:"right"});
+
+  let y=54;
+
+  // ── Bill To ────────────────────────────────────────────────────────────────
+  const custName = (job.customerName||"").trim() || "Roadside Customer";
+  doc.setFont("helvetica","bold"); doc.setFontSize(7); doc.setTextColor(...ORANGE);
+  doc.text("BILL TO",M,y);
+  doc.setFont("helvetica","bold"); doc.setFontSize(14); doc.setTextColor(...NEAR_BLK);
+  doc.text(custName,M,y+8);
+  if (job.customerPhone) {
+    const raw = String(job.customerPhone).replace(/\D/g,"");
+    const fmt = raw.length===10
+      ? "("+raw.slice(0,3)+") "+raw.slice(3,6)+"-"+raw.slice(6)
+      : job.customerPhone;
+    doc.setFont("helvetica","normal"); doc.setFontSize(9.5); doc.setTextColor(...GRAY);
+    doc.text(fmt,M,y+16);
+  }
+
+  // ── Detail box (Date / Location / Payment / Status / Source) ────────────────
+  const dbX=126, dbW=66;
+  const details=[
+    ["Date",       job.date||"—"],
+    ["Location",   job.area||"—"],
+    ["Payment",    job.payment||"—"],
+    ["Status",     job.status==="Pending"?"PENDING":"PAID"],
+    ["Source",     (job.source||"Direct")],
+  ];
+  const dbH = details.length * 7.4 + 5;
+  doc.setFillColor(...OFFWHITE); doc.roundedRect(dbX,y-5,dbW,dbH,3,3,"F");
+  let dy=y+1;
+  details.forEach(([lbl,val]) => {
+    doc.setFont("helvetica","normal"); doc.setFontSize(7.5); doc.setTextColor(...GRAY);
+    doc.text(lbl,dbX+5,dy);
+    doc.setFont("helvetica","bold"); doc.setFontSize(7.5);
+    let color = NAVY;
+    if (lbl==="Status") color = val==="PAID"?[0,110,55]:[190,30,30];
+    doc.setTextColor(...color);
+    doc.text(String(val),dbX+dbW-4,dy,{align:"right"});
+    dy+=7.4;
+  });
+  y = Math.max(y+30, y-5+dbH+4);
+
+  // ── Divider ────────────────────────────────────────────────────────────────
+  doc.setDrawColor(...LGRAY); doc.setLineWidth(0.25); doc.line(M,y,W-M,y); y+=8;
+
+  // ── Table header ──────────────────────────────────────────────────────────
+  doc.setFillColor(...NAVY); doc.roundedRect(M,y-4,W-M*2,11,2,2,"F");
+  doc.setFont("helvetica","bold"); doc.setFontSize(8); doc.setTextColor(...WHITE);
+  doc.text("SERVICE DESCRIPTION",M+4,y+3);
+  doc.text("QTY",150,y+3,{align:"center"});
+  doc.text("AMOUNT",W-M-2,y+3,{align:"right"});
+  y+=15;
+
+  // ── Service line item ─────────────────────────────────────────────────────
+  const svcLabel = (job.service||"Tire Service")+" (Mobile Service)";
+  const meta1 = job.area       ? "Location: "+job.area                  : null;
+  const meta2 = job.tireSize   ? "Tire Size: "+job.tireSize             : null;
+  const meta3 =                  "Quantity: "+String(Number(job.qty||1));
+  const metas = [meta1,meta2,meta3].filter(Boolean);
+  const rowH  = 14 + metas.length*6;
+
+  doc.setFillColor(...OFFWHITE); doc.rect(M,y-4,W-M*2,rowH,"F");
+  doc.setFont("helvetica","bold"); doc.setFontSize(11); doc.setTextColor(...NEAR_BLK);
+  doc.text(svcLabel,M+4,y+3);
+  let my=y+9;
+  metas.forEach(line => {
+    doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(...GRAY);
+    doc.text(line,M+6,my); my+=6;
+  });
+  doc.setFont("helvetica","bold"); doc.setFontSize(11); doc.setTextColor(...NAVY);
+  doc.text(String(Number(job.qty||1)),150,y+3,{align:"center"});
+  doc.text(money(Number(job.revenue||0)),W-M-2,y+3,{align:"right"});
+  y+=rowH+4;
+
+  // ── Notes (only if explicitly marked customer-safe with [C] prefix) ───────
+  const rawNote = String(job.note||"").trim();
+  const isCustomerSafe = /^\[c\]/i.test(rawNote);
+  if (isCustomerSafe) {
+    const cleanNote = rawNote.replace(/^\[c\]\s*/i,"");
+    doc.setFont("helvetica","italic"); doc.setFontSize(9); doc.setTextColor(...GRAY);
+    const nl=doc.splitTextToSize("Note: "+cleanNote, W-M*2-10);
+    doc.text(nl,M+4,y); y+=nl.length*5+6;
+  }
+
+  // ── Customer-facing summary ─────────────────────
+  doc.setDrawColor(...LGRAY); doc.setLineWidth(0.2); doc.line(M,y,W-M,y); y+=8;
+  const rev = Number(job.revenue||0);
+  const summaryRows = [
+    [(job.service||"Tire Service"),          money(rev)],
+    ["On-Site Mobile Service Included",      "—"],
+  ];
+  summaryRows.forEach(([lbl,val]) => {
+    doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(...GRAY);
+    doc.text(lbl,M+4,y);
+    doc.setFont("helvetica","bold"); doc.setFontSize(9); doc.setTextColor(...NAVY);
+    doc.text(val,W-M-2,y,{align:"right"});
+    y+=7;
+  });
+  y+=4;
+
+  // ── Total block ───────────────────────────────────────────────────────────
+  doc.setDrawColor(...LGRAY); doc.setLineWidth(0.25); doc.line(M,y,W-M,y); y+=6;
+  const tx=W-M-76, tw=76;
+  doc.setFillColor(...NAVY); doc.roundedRect(tx,y-3,tw,22,3,3,"F");
+  doc.setFillColor(...ORANGE); doc.roundedRect(tx,y-3,4,22,2,2,"F");
+  doc.setFont("helvetica","bold"); doc.setFontSize(8.5); doc.setTextColor(175,200,225);
+  doc.text("TOTAL DUE",tx+10,y+5);
+  doc.setFontSize(17); doc.setTextColor(...WHITE);
+  doc.text(money(rev),W-M-4,y+12,{align:"right"});
+  y+=28;
+
+  // ── Trust line ────────────────────────────────────────────────────────────
+  doc.setFont("helvetica","italic"); doc.setFontSize(8.5); doc.setTextColor(...GRAY);
+  doc.text("On-site mobile service completed. We come to you — no tow required.",M,y,{align:"left"});
+  y+=12;
+
+  // ── Footer (BRANDED with N & K On Time contact info) ─────────────────────
+  const fy=263;
+  doc.setFillColor(...NAVY);   doc.rect(0,fy,W,34,"F");
+  doc.setFillColor(...ORANGE); doc.rect(0,fy,W,2,"F");
+  doc.setFont("helvetica","bold"); doc.setFontSize(9.5); doc.setTextColor(...WHITE);
+  doc.text("Thank you for choosing N & K On Time Mobile Tires",W/2,fy+9,{align:"center"});
+  doc.setFont("helvetica","normal"); doc.setFontSize(7.5); doc.setTextColor(175,200,225);
+  doc.text("(954) 270-5974  ·  nkontimemobiletires@gmail.com",W/2,fy+15,{align:"center"});
+  doc.text("2261 NW 49th Ave, Lauderhill, FL 33313  ·  nkontimemobiletires.com",W/2,fy+20,{align:"center"});
+  doc.setFont("helvetica","bold"); doc.setFontSize(7.5); doc.setTextColor(...ORANGE);
+  doc.text("Open 24/7 — Mobile Tire Repair & Roadside Assistance",W/2,fy+27,{align:"center"});
+
+  return doc;
+}
+function sendInvoice(job,settings) {
+  const doc = generateInvoicePDF(job,settings); if (!doc) return;
+  const name=(job.customerName||"Job").replace(/\s+/g,"-");
+  doc.save("NKOnTime-Invoice-"+(job.date||"").replace(/-/g,"")+"-"+name+".pdf");
+}
+function migrateOldJobs() {
+  // Migration: pulls jobs from any prior localStorage namespace (Wheel Rush install
+  // upgrading to N&K, or just earlier versions). Safe no-op if nothing matches.
+  const OLD=["wr-jobs-v5","wr-upgraded-jobs-v1","wr2-jobs-v1","wr2-jobs-v2","wheelrush_jobs"];
+  const cur=load(KEYS.jobs,[]);const ids=new Set(cur.map(j=>String(j.id)));
+  let mg=[...cur],cnt=0;
+  OLD.forEach(k=>{try{const o=load(k,[]);if(Array.isArray(o))o.forEach(j=>{if(!ids.has(String(j.id))){mg.push({...j,id:String(j.id||Date.now()),source:j.source||"Google",tireCost:j.tireCost||j.cost||0,miscCost:j.miscCost||0});ids.add(String(j.id));cnt++;}});}catch{}});
+  if(cnt>0)persist(KEYS.jobs,mg);
+  return mg;
+}
+
+// ── Error Boundary ────────────────────────────────────────────────────────────
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = {crashed:false, error:null}; }
+  static getDerivedStateFromError(error) { return {crashed:true, error}; }
+  componentDidCatch(error, info) { console.error("N&K On Time crash:", error, info); }
+  render() {
+    if (this.state.crashed) {
+      return React.createElement("div", {
+        style:{height:"100%",display:"flex",flexDirection:"column",alignItems:"center",
+               justifyContent:"center",background:"#0a0a0f",padding:"32px",gap:16}
+      },
+        React.createElement("div",{style:{fontSize:40}},"⚠️"),
+        React.createElement("div",{style:{color:"#f0f0fa",fontSize:18,fontWeight:700,textAlign:"center"}},"Something went wrong"),
+        React.createElement("div",{style:{color:"#8888a8",fontSize:13,textAlign:"center",lineHeight:1.6,maxWidth:280}},
+          "The app hit an error. Tap to recover."),
+        React.createElement("div",{style:{color:"#44445a",fontSize:11,textAlign:"center",fontFamily:"monospace",maxWidth:320,wordBreak:"break-all",marginTop:4}},
+          String(this.state.error||"").slice(0,140)),
+        React.createElement("button",{
+          onClick:()=>this.setState({crashed:false,error:null}),
+          style:{background:"linear-gradient(135deg,#5a97ff,#3d7ef5)",color:"#fff",
+                 border:"none",borderRadius:12,padding:"14px 28px",fontSize:15,
+                 fontWeight:700,cursor:"pointer",marginTop:8}
+        },"Reload App")
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// ── EmptyState ────────────────────────────────────────────────────────────────
+function EmptyState({icon,title,sub,action,branded}) {
+  return html`<div class="empty-premium page-enter">
+    ${branded!==false&&html`<img src=${LOGO_SRC} alt="" style=${{width:80,height:80,objectFit:"contain",opacity:.07,display:"block",margin:"0 auto 8px"}} onError=${e=>e.target.style.display="none"}/>`}
+    <div class="icon" style=${{opacity:branded===false?.7:.55}}>${icon}</div>
+    <div class="title">${title}</div>
+    ${sub&&html`<div class="sub">${sub}</div>`}
+    ${action&&html`<div style=${{marginTop:22}}>${action}</div>`}
+  </div>`;
+}
+
+// ── Progress Ring ─────────────────────────────────────────────────────────────
+function ProgressRing({size,stroke,pct,color,children}) {
+  const radius = (size-stroke)/2;
+  const circ = 2*Math.PI*radius;
+  const offset = circ - (clamp(pct,0,100)/100)*circ;
+  return html`<div class="progress-ring" style=${{width:size,height:size}}>
+    <svg width=${size} height=${size}>
+      <circle class="progress-ring-bg" cx=${size/2} cy=${size/2} r=${radius} strokeWidth=${stroke}/>
+      <circle class="progress-ring-fill" cx=${size/2} cy=${size/2} r=${radius} strokeWidth=${stroke}
+        stroke=${color} style=${{strokeDasharray:circ,strokeDashoffset:offset,color}}/>
+    </svg>
+    <div class="progress-ring-label">${children}</div>
+  </div>`;
+}
+
+// ── CityInput (CITY_LIST expanded for Broward + Palm Beach service area) ─────
+const CITY_LIST=["Lauderhill","Fort Lauderdale","Plantation","Sunrise","Coral Springs","Margate","North Lauderdale","Lauderdale Lakes","Tamarac","Oakland Park","Wilton Manors","Pompano Beach","Deerfield Beach","Lighthouse Point","Dania Beach","Hallandale Beach","Hollywood","Pembroke Pines","Miramar","Davie","Cooper City","Southwest Ranches","Weston","Parkland","Coconut Creek","Hillsboro Beach","Sea Ranch Lakes","Lazy Lake","Pembroke Park","West Park","Lauderdale-by-the-Sea","Boca Raton","Delray Beach","Boynton Beach","West Palm Beach","Lake Worth","Royal Palm Beach","Wellington","Greenacres","Palm Beach Gardens","Jupiter","Miami","Miami Beach","North Miami","North Miami Beach","Miami Gardens","Hialeah","Hialeah Gardens","Opa-locka","Aventura","Sunny Isles Beach","Bal Harbour","Bay Harbor Islands","Surfside","Doral","Sweetwater","West Miami","Coral Gables","South Miami","Pinecrest","Palmetto Bay","Cutler Bay","Homestead","Florida City","Kendall","West Kendall","Other"];
+function CityInput({value,onChange}) {
+  const [q,setQ]=useState(value||"");
+  const [open,setOpen]=useState(false);
+  const inputRef=useRef(null);
+  const recentCities=useMemo(()=>load(KEYS.cities,[]).slice(0,6),[]);
+  useEffect(()=>setQ(value||""),[value]);
+  const matches=useMemo(()=>{if(!q.trim())return[];const lq=q.toLowerCase();return CITY_LIST.filter(c=>c.toLowerCase().includes(lq)).slice(0,12);},[q]);
+  const pick=c=>{onChange(c);setQ(c);setOpen(false);const r=load(KEYS.cities,[]).filter(x=>x!==c);persist(KEYS.cities,[c,...r].slice(0,8));if(inputRef.current)inputRef.current.blur();};
+  return html`<div class="city-input-wrap">
+    <input ref=${inputRef} value=${q}
+      onChange=${e=>{setQ(e.target.value);onChange(e.target.value);setOpen(true);}}
+      onFocus=${()=>setOpen(true)}
+      onBlur=${()=>setTimeout(()=>setOpen(false),200)}
+      placeholder="Type a city…"
+      style=${{width:"100%",border:"1px solid var(--border)",background:"var(--s3)",color:"var(--t1)",borderRadius:"var(--r3)",padding:"13px 15px",outline:"none",fontSize:16}}
+    />
+    ${!open&&!q&&html`<div class="chip-row" style=${{marginTop:8}}>
+      ${TOP_CITIES.slice(0,6).map(c=>html`<button key=${c} type="button" class=${"chip city sm"+(value===c?" active":"")} onClick=${()=>pick(c)}>${c}</button>`)}
+    </div>`}
+    ${open&&html`<div class="city-dropdown">
+      ${!q&&recentCities.length>0&&html`<div>
+        <div class="city-section-head">Recent</div>
+        ${recentCities.map(c=>html`<div key=${c} class="city-option" onMouseDown=${()=>pick(c)}><span>🕐</span>${c}</div>`)}
+        <div class="city-section-head">Quick picks</div>
+        ${TOP_CITIES.map(c=>html`<div key=${c} class="city-option" onMouseDown=${()=>pick(c)}><span>📍</span>${c}</div>`)}
+      </div>`}
+      ${q&&matches.map(c=>html`<div key=${c} class="city-option" onMouseDown=${()=>pick(c)}><span>📍</span>${c}</div>`)}
+      ${q&&matches.length===0&&html`<div class="city-option" style=${{color:"#999"}} onMouseDown=${()=>pick(q)}>Use "${q}" →</div>`}
+    </div>`}
+  </div>`;
+}
+
+// ── QuickQuote (no brand text) ──────────────────────────────────────────────
+function QuickQuote({form,settings,onApply,onFormChange,priceMode,setPriceMode}) {
+  const customRef=useRef(null);
+  const isTierPriced = isCustomerSuppliedInstall(form) || isWeSupplyTireJob(form);
+  const hasInputs = isTierPriced
+    || Number(form.miles||0)>0
+    || Number(form.tireCost||0)>0
+    || Number(form.miscCost||0)>0;
+
+  const calc = calculateJobPricing(form, settings);
+  const { directCost, suggestedPrice:suggested, premiumPrice, urgencyPremium:prem,
+          travelCost, tireCost, miscCost, distanceAdj, vehicleAdd,
+          baseTarget, targetProfit, decisionLabel, decisionType } = calc;
+
+  const skip = Number(settings.skipThreshold||70);
+  const dispPrice = priceMode==="custom" ? Number(form.revenue||0)
+                  : priceMode==="premium" ? premiumPrice
+                  : suggested;
+  const profit = r2(dispPrice - directCost);
+
+  const liveDec = priceMode==="custom" && Number(form.revenue||0)>0
+    ? (profit < 0 ? {label:"⚠ Loss — you'd lose " + money(Math.abs(profit)), type:"loss"}
+      : profit<skip ? {label:"Low margin — increase price", type:"low"}
+      : profit>=skip+40 ? {label:"Strong profit — take it", type:"strong"}
+      : {label:"Take it", type:"take"})
+    : { label: decisionLabel, type: decisionType };
+  const badgeCls = liveDec.type==="loss" || liveDec.type==="low" || liveDec.type==="missing" ? "low"
+                 : liveDec.type==="strong" ? "take"
+                 : "take";
+
+  const handleMode=(mode,price)=>{if(setPriceMode)setPriceMode(mode);onApply(price===""?"":String(price));if(mode==="custom")setTimeout(()=>customRef.current&&customRef.current.focus(),80);};
+  const inpSt={background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.18)",borderRadius:8,padding:"8px 10px",color:"#fff",fontSize:15,outline:"none",width:"100%",fontFamily:'"IBM Plex Mono",monospace',fontWeight:600,textAlign:"center"};
+  const lbl={fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:".6px",color:"var(--t2)",marginBottom:5,textAlign:"center"};
+  return html`<div class="quote-box card-anim">
+    <div style=${{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,marginBottom:14}}>
+      <div><div style=${lbl}>Miles</div><input type="number" min="0" inputMode="decimal" placeholder="0" value=${form.miles||""} onChange=${e=>onFormChange("miles",e.target.value)} style=${inpSt}/></div>
+      <div><div style=${lbl}>Tire $</div><input type="number" min="0" inputMode="decimal" placeholder="0" value=${form.tireCost||""} onChange=${e=>onFormChange("tireCost",e.target.value)} style=${inpSt}/></div>
+      <div><div style=${lbl}>Misc $</div><input type="number" min="0" inputMode="decimal" placeholder="0" value=${form.miscCost||""} onChange=${e=>onFormChange("miscCost",e.target.value)} style=${inpSt}/></div>
+      <div><div style=${lbl}>Qty</div><input type="number" min="1" inputMode="numeric" placeholder="1" value=${form.qty||""} onChange=${e=>onFormChange("qty",e.target.value)} style=${inpSt}/></div>
+    </div>
+    ${!hasInputs?html`<div style=${{textAlign:"center",padding:"8px 0"}}>
+      <div style=${{fontSize:13,color:"var(--t2)",fontWeight:600}}>Enter job details above</div>
+      <div style=${{fontSize:11,color:"var(--t3)",marginTop:4}}>Miles · Tire cost · Misc → auto-calculates</div>
+    </div>`:html`<div>
+      <div class="qq-suggested">
+        <div class="qq-suggested-label">${priceMode==="custom"?"Custom Price":priceMode==="premium"?"Premium Price":"Suggested Price"}</div>
+        <div class="qq-suggested-price">${money(dispPrice)}</div>
+        <div style=${{display:"flex",justifyContent:"center",gap:16,marginTop:8,marginBottom:8}}>
+          <div style=${{textAlign:"center"}}><div style=${{fontSize:10,color:"var(--t3)",fontWeight:700,textTransform:"uppercase",letterSpacing:".5px",marginBottom:2}}>Cost</div><div style=${{fontFamily:'"IBM Plex Mono",monospace',fontSize:15,fontWeight:700,color:"var(--t2)"}}>${money(directCost)}</div></div>
+          <div style=${{width:1,background:"var(--border)"}}/>
+          <div style=${{textAlign:"center"}}><div style=${{fontSize:10,color:"var(--t3)",fontWeight:700,textTransform:"uppercase",letterSpacing:".5px",marginBottom:2}}>Profit</div><div style=${{fontFamily:'"IBM Plex Mono",monospace',fontSize:15,fontWeight:700,color:profit>=skip?"#4ade80":"#ef4444"}}>${money(profit)}</div></div>
+          ${prem>0&&html`<div style=${{width:1,background:"var(--border)"}}/><div style=${{textAlign:"center"}}><div style=${{fontSize:10,color:"var(--t3)",fontWeight:700,textTransform:"uppercase",letterSpacing:".5px",marginBottom:2}}>Premium</div><div style=${{fontFamily:'"IBM Plex Mono",monospace',fontSize:15,fontWeight:700,color:"#fb923c"}}>+${money(prem)}</div></div>`}
+        </div>
+        ${priceMode!=="custom"&&html`<div style=${{fontSize:10,color:"var(--t3)",textAlign:"center",marginBottom:8,fontFamily:'"IBM Plex Mono",monospace',letterSpacing:".2px"}}>
+          ${"Target "+money(targetProfit - vehicleAdd)}${travelCost>0?" + Travel "+money(travelCost):""}${tireCost>0?" + Tire "+money(tireCost):""}${miscCost>0?" + Misc "+money(miscCost):""}${vehicleAdd>0?" + Vehicle "+money(vehicleAdd):""}${distanceAdj>0?" + Distance "+money(distanceAdj):""}${(prem-distanceAdj)>0?" + Urgency "+money(prem-distanceAdj):""}
+        </div>`}
+        <span class=${"qq-dec-badge "+badgeCls}>${liveDec.label}</span>
+      </div>
+      <div class="qq-apply-row">
+        <button class=${"qq-apply-btn suggested press-scale"+(priceMode==="suggested"?" active-sel":"")} onClick=${()=>handleMode("suggested",suggested)}>${priceMode==="suggested"?"✓ ":""}${money(suggested)}<br/><span style=${{fontSize:10,opacity:.8}}>Suggested</span></button>
+        <button class=${"qq-apply-btn premium press-scale"+(priceMode==="premium"?" active-sel":"")} onClick=${()=>handleMode("premium",premiumPrice)}>${priceMode==="premium"?"✓ ":""}${money(premiumPrice)}<br/><span style=${{fontSize:10,opacity:.8}}>Premium</span></button>
+        <button class=${"qq-apply-btn custom press-scale"+(priceMode==="custom"?" active-sel":"")} onClick=${()=>handleMode("custom","")}>${priceMode==="custom"?"✓ ":""}Custom<br/><span style=${{fontSize:10,opacity:.8}}>Enter →</span></button>
+      </div>
+      ${priceMode==="custom"&&html`<div style=${{padding:"10px 10px 4px"}}>
+        <div style=${{fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:".6px",color:"var(--t2)",marginBottom:6,textAlign:"center"}}>Custom Price ($)</div>
+        <input ref=${customRef} type="number" min="0" inputMode="decimal" placeholder="0.00" value=${form.revenue||""} onChange=${e=>onFormChange("revenue",e.target.value)} style=${{background:"rgba(255,255,255,.12)",border:"2px solid rgba(255,255,255,.3)",borderRadius:10,padding:"12px",color:"#fff",fontSize:22,outline:"none",width:"100%",fontFamily:'"IBM Plex Mono",monospace',fontWeight:700,textAlign:"center"}}/>
+        <div style=${{fontSize:10,color:"var(--t3)",textAlign:"center",marginTop:5}}>Profit: ${money(r2(Number(form.revenue||0)-directCost))}</div>
+      </div>`}
+    </div>`}
+  </div>`;
+}
+
+// ── AuthScreen (BRANDED login) ────────────────────────────────────────────────
+function AuthScreen({onAuth}) {
+  const [email,setEmail]=useState("");const [pass,setPass]=useState("");
+  const [mode,setMode]=useState("login");const [err,setErr]=useState("");const [busy,setBusy]=useState(false);
+  const submit=async()=>{
+    if(!email||!pass){setErr("Enter your email and password.");return;}
+    setBusy(true);setErr("");
+    try{const c=await _auth.signInWithEmailAndPassword(email,pass);onAuth(c.user);}
+    catch(e){setErr(e.message||"Auth failed.");}finally{setBusy(false);}
+  };
+  const google=async()=>{try{const c=await _auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());onAuth(c.user);}catch(e){setErr(e.message);}};
+  return html`<div style=${{height:"100%",display:"flex",flexDirection:"column",background:"#0a0a0a",padding:"0 24px",paddingTop:"env(safe-area-inset-top)"}}>
+    <div style=${{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",paddingBottom:16}}>
+      <img src=${LOGO_SRC} alt="N & K On Time Mobile Tires" onError=${e=>e.target.style.display="none"} style=${{width:88,height:88,objectFit:"contain",borderRadius:18,marginBottom:20,boxShadow:"0 4px 20px rgba(0,0,0,.6), 0 0 0 1px rgba(79,142,247,.15)",animation:"scaleIn .5s ease"}}/>
+      <div class="shimmer-text" style=${{fontSize:24,fontWeight:700,marginBottom:4,textAlign:"center",lineHeight:1.2}}>N &amp; K On Time</div>
+      <div style=${{color:"#555",fontSize:13,fontWeight:600,textAlign:"center"}}>Mobile Tires · Lauderhill, FL</div>
+    </div>
+    <div style=${{paddingBottom:"calc(32px + env(safe-area-inset-bottom))"}}>
+      ${err&&html`<div style=${{background:"var(--red-dim)",border:"1px solid rgba(239,68,68,.3)",color:"#f87171",padding:"12px 16px",borderRadius:12,fontSize:13,fontWeight:600,marginBottom:16}}>${err}</div>`}
+      <div class="auth-field"><label class="auth-label">Email</label><input class="auth-inp2" type="email" placeholder="you@email.com" value=${email} onChange=${e=>setEmail(e.target.value)} autoCapitalize="off"/></div>
+      <div class="auth-field" style=${{marginBottom:20}}><label class="auth-label">Password</label><input class="auth-inp2" type="password" placeholder="••••••••" value=${pass} onChange=${e=>setPass(e.target.value)} onKeyDown=${e=>e.key==="Enter"&&submit()}/></div>
+      <button class="auth-btn-main press-scale" onClick=${submit} disabled=${busy}>${busy?"Working…":"Sign In"}</button>
+      <button class="auth-btn-google press-scale" onClick=${google}>
+        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
+        Continue with Google
+      </button>
+      <div style=${{textAlign:"center",fontSize:12,color:"#444",padding:"8px"}}>
+        Owner access only · Contact admin
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── Header (BRANDED) ─────────────────────────────────────────────────────────
+function Header({syncStatus,onSignOut}) {
+  const isLive=syncStatus==="connected",isSyncing=syncStatus==="syncing";
+  return html`<div class="header-compact">
+    <div style=${{display:"flex",alignItems:"center",gap:10}}>
+      <img src=${LOGO_SRC} alt="NK" style=${{width:32,height:32,objectFit:"contain",borderRadius:9,flexShrink:0,boxShadow:"0 2px 10px rgba(0,0,0,.5), 0 0 0 1px rgba(79,142,247,.15)"}} onError=${e=>e.target.style.display="none"}/>
+      <div><h1>N &amp; K On Time</h1><p>Mobile Tires · Lauderhill, FL</p></div>
+    </div>
+    <div style=${{display:"flex",alignItems:"center",gap:10}}>
+      <span class=${isSyncing?"syncing":""} style=${{fontSize:9,fontWeight:800,letterSpacing:"1px",textTransform:"uppercase",color:isLive?"var(--green)":"var(--t3)",textShadow:isLive?"0 0 8px rgba(34,197,94,.4)":"none"}}>
+        ${isLive?"● Live":isSyncing?"○ Sync":"○ Local"}
+      </span>
+      ${onSignOut&&html`<button onClick=${()=>onSignOut()} style=${{background:"var(--s3)",border:"1px solid var(--border)",color:"var(--t3)",fontSize:10,cursor:"pointer",padding:"5px 10px",borderRadius:7,fontWeight:700}}>Out</button>`}
+    </div>
+  </div>`;
+}
+
+// ── CallCounter ──────────────────────────────────────────────────────────────
+function CallCounter({jobsToday}) {
+  const today = TODAY();
+  const [calls, setCalls] = useState(() => {
+    const data = load(KEYS.calls, {});
+    return Number(data[today] || 0);
+  });
+  const [autoFlash, setAutoFlash] = useState(false);
+  useEffect(() => {
+    const handler = () => {
+      const data = load(KEYS.calls, {});
+      const next = Number(data[today] || 0);
+      setCalls(prev => {
+        if (next > prev) {
+          setAutoFlash(true);
+          setTimeout(() => setAutoFlash(false), 700);
+        }
+        return next;
+      });
+    };
+    window.addEventListener("nk-calls-updated", handler);
+    return () => window.removeEventListener("nk-calls-updated", handler);
+  }, [today]);
+  const update = (delta) => {
+    const next = Math.max(0, calls + delta);
+    setCalls(next);
+    const data = load(KEYS.calls, {});
+    data[today] = next;
+    persist(KEYS.calls, data);
+  };
+  const showRate = calls > 0 ? Math.round((jobsToday / calls) * 100) : 0;
+  return html`<div class="card card-anim" style=${{marginBottom:14,padding:"12px 14px"}}>
+    <div style=${{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+      <div>
+        <div style=${{fontSize:9,fontWeight:800,textTransform:"uppercase",letterSpacing:"1.4px",color:"var(--t3)"}}>Today's Calls</div>
+        <div style=${{fontSize:11,color:"var(--t3)",marginTop:2,fontFamily:'"IBM Plex Mono",monospace'}}>${calls} call${calls===1?"":"s"} · ${jobsToday} booked${calls>0?" · "+showRate+"% show":""}</div>
+      </div>
+      <div style=${{display:"flex",alignItems:"center",gap:6}}>
+        <button class="press-scale" onClick=${()=>update(-1)} disabled=${calls===0} style=${{width:34,height:34,borderRadius:8,border:"1px solid var(--border)",background:"var(--card)",color:calls===0?"var(--t3)":"var(--t1)",fontSize:16,fontWeight:700,cursor:calls===0?"default":"pointer",opacity:calls===0?0.4:1}}>−</button>
+        <div style=${{minWidth:32,textAlign:"center",fontFamily:'"IBM Plex Mono",monospace',fontSize:18,fontWeight:800,color:autoFlash?"var(--green)":"var(--t1)",transform:autoFlash?"scale(1.15)":"scale(1)",transition:"all .25s cubic-bezier(.34,1.56,.64,1)"}}>${calls}</div>
+        <button class="press-scale" onClick=${()=>update(1)} style=${{width:34,height:34,borderRadius:8,border:"1px solid var(--blue)",background:"var(--blue)",color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer"}}>+</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function Dashboard({jobs,settings,setTab,onRepeat,inventory,onStartJob}) {
+  const [qqForm,setQqForm]=useState({
+    service:"Flat Tire Repair",
+    vehicleType:"Car",
+    tireSource:"Customer supplied",
+    miles:"",tireCost:"",miscCost:"",qty:1,revenue:"",
+    emergency:false,lateNight:false,highway:false,weekend:false
+  });
+  const [qqMode,setQqMode]=useState("suggested");
+  const qqChange=(k,v)=>setQqForm(p=>({...p,[k]:v}));
+  const qqApply=price=>setQqForm(p=>({...p,revenue:price}));
+  const safeJobs=Array.isArray(jobs)?jobs:[];
+  const today=TODAY(),thisWeek=getWeekStart(today);
+  const weekJobs=useMemo(()=>safeJobs.filter(j=>getWeekStart(j.date)===thisWeek),[safeJobs,thisWeek]);
+  const todayJobs=useMemo(()=>safeJobs.filter(j=>j.date===today),[safeJobs,today]);
+  const earnedJobs    = useMemo(()=>weekJobs.filter(j=>j.status!=="Pending"),[weekJobs]);
+  const pendingWk     = useMemo(()=>weekJobs.filter(j=>j.status==="Pending"),[weekJobs]);
+  const totals        = useMemo(()=>weekSummary(earnedJobs,settings),[earnedJobs,settings]);
+  const pendingProfit = useMemo(()=>pendingWk.reduce((s,j)=>s+jobGrossProfit(j,settings),0),[pendingWk,settings]);
+  const avgProfit     = earnedJobs.length?r2(totals.grossProfit/earnedJobs.length):0;
+  const goalPct       = clamp((totals.grossProfit/(settings.weeklyGoal||1))*100,0,100);
+  const jobsNeeded    = avgProfit>0?Math.max(0,Math.ceil(((settings.weeklyGoal||0)-totals.grossProfit)/avgProfit)):"—";
+  const sources=useMemo(()=>{const m={};safeJobs.forEach(j=>{const s=j.source||"Other";m[s]=(m[s]||0)+1;});return Object.entries(m).sort((a,b)=>b[1]-a[1]);},[safeJobs]);
+  const maxSrc=sources.length?sources[0][1]:1;
+  const recent=useMemo(()=>[...safeJobs].sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id)).slice(0,5),[safeJobs]);
+  const lastJob = recent.length ? recent[0] : null;
+  const top5Tires=useMemo(()=>{const counts={};safeJobs.forEach(j=>{if(j.tireSize){counts[j.tireSize]=(counts[j.tireSize]||0)+Number(j.qty||1);}});return Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([size,sold],i)=>({id:"bs"+i,size,sold}));},[safeJobs]);
+  const pendingJobs=useMemo(()=>safeJobs.filter(j=>j.status==="Pending"),[safeJobs]);
+  const pendingTotal=pendingJobs.reduce((s,j)=>s+Number(j.revenue||0),0);
+
+  const lowStock = useMemo(() => {
+    const inv = Array.isArray(inventory) ? inventory : [];
+    const byNormSize = {};
+    inv.forEach(i => {
+      const n = normalizeTireSize(i.size);
+      if (!n) return;
+      byNormSize[n] = (byNormSize[n] || 0) + Number(i.qty || 0);
+    });
+    const alerts = [];
+    top5Tires.forEach(t => {
+      const n = normalizeTireSize(t.size);
+      if (!n) return;
+      const onHand = byNormSize[n] || 0;
+      if (onHand <= 1) {
+        alerts.push({ size: t.size, onHand, soldCount: t.sold });
+      }
+    });
+    return alerts.slice(0, 3);
+  }, [top5Tires, inventory]);
+
+  const lastWeekStart=useMemo(()=>{const d=new Date(thisWeek+"T12:00:00");d.setDate(d.getDate()-7);return d.toLocaleDateString("en-CA",{timeZone:"America/New_York"});},[thisWeek]);
+  const lastWeekJobs=useMemo(()=>safeJobs.filter(j=>getWeekStart(j.date)===lastWeekStart),[safeJobs,lastWeekStart]);
+  const lastWeekGross=lastWeekJobs.reduce((s,j)=>s+jobGrossProfit(j,settings),0);
+  const wowChange=lastWeekGross>0?Math.round(((totals.grossProfit-lastWeekGross)/lastWeekGross)*100):0;
+  const ringColor=goalPct>=100?"var(--green)":goalPct>=60?"var(--blue)":"var(--amber)";
+  const animatedProfit = useCountUp(totals.grossProfit, 800);
+
+  const prevProfitRef = useRef(totals.grossProfit);
+  useEffect(() => {
+    const prev = prevProfitRef.current;
+    if (totals.grossProfit > prev + 0.5) {
+      const el = document.getElementById("nk-hero-amount");
+      if (el) {
+        el.classList.remove("ticker-up");
+        void el.offsetWidth;
+        el.classList.add("ticker-up");
+      }
+      try { if (navigator.vibrate) navigator.vibrate(10); } catch(e) {}
+    }
+    prevProfitRef.current = totals.grossProfit;
+  }, [totals.grossProfit]);
+  return html`<div class="screen"><div class="page page-enter">
+    <div class="pro-hero card-anim premium-grain" id="nk-hero">
+      <div style=${{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:22,gap:16}}>
+        <div style=${{flex:1,minWidth:0}}>
+          <div style=${{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+            <div class="t-label" style=${{color:"var(--blue)"}}>This Week</div>
+            ${wowChange!==0&&html`<div style=${{fontSize:10,fontWeight:800,color:wowChange>0?"var(--green)":"var(--red)",background:wowChange>0?"var(--green-dim)":"var(--red-dim)",padding:"3px 9px",borderRadius:999,letterSpacing:".3px"}}>${wowChange>0?"▲":"▼"} ${Math.abs(wowChange)}%</div>`}
+          </div>
+          <div class=${"hero-amount"+(goalPct>=100?" target-hit":"")} id="nk-hero-amount">
+            <span class="currency">$</span>${Math.floor(animatedProfit).toLocaleString()}
+          </div>
+          <div class="t-meta" style=${{marginTop:10,color:"var(--t3)"}}>
+            earned · ${earnedJobs.length} paid job${earnedJobs.length!==1?"s":""} · ${money(totals.revenue)} rev
+          </div>
+          ${pendingProfit>0 && html`<div class="t-meta" style=${{marginTop:4,color:"var(--gold)",fontWeight:700}}>
+            + ${money(pendingProfit)} pending · ${pendingWk.length} job${pendingWk.length!==1?"s":""} to collect
+          </div>`}
+        </div>
+        <${ProgressRing} size=${88} stroke=${6} pct=${goalPct} color=${ringColor}>
+          <div class="num" style=${{fontSize:18,fontWeight:700,color:"var(--t1)",letterSpacing:"-1px",lineHeight:1}}>${Math.round(goalPct)}%</div>
+          <div class="t-label" style=${{fontSize:8,letterSpacing:".5px",marginTop:2}}>Goal</div>
+        <//>
+      </div>
+      <div style=${{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,padding:"16px 0 4px",borderTop:"1px solid var(--border)"}}>
+        <div style=${{textAlign:"center"}}>
+          <div class="num" style=${{fontSize:18,fontWeight:700,color:"var(--t1)",letterSpacing:"-1px"}}>${money(totals.revenue)}</div>
+          <div class="t-label" style=${{marginTop:4}}>Revenue</div>
+        </div>
+        <div style=${{textAlign:"center",borderLeft:"1px solid var(--border)",borderRight:"1px solid var(--border)"}}>
+          <div class="num" style=${{fontSize:18,fontWeight:700,color:"var(--red)",letterSpacing:"-1px"}}>${money(totals.directCosts)}</div>
+          <div class="t-label" style=${{marginTop:4}}>Costs</div>
+        </div>
+        <div style=${{textAlign:"center"}}>
+          <div class="num" style=${{fontSize:18,fontWeight:700,color:"var(--blue)",letterSpacing:"-1px"}}>${typeof jobsNeeded==="number"?jobsNeeded:"—"}</div>
+          <div class="t-label" style=${{marginTop:4}}>To Goal</div>
+        </div>
+      </div>
+      ${goalPct>=100&&html`<div style=${{textAlign:"center",marginTop:14,animation:"scaleIn .4s ease"}}>
+        <span style=${{background:"var(--green-dim)",color:"var(--green)",padding:"6px 16px",borderRadius:999,fontSize:12,fontWeight:800,border:"1px solid rgba(34,197,94,.25)",letterSpacing:".3px"}}>🎯 GOAL HIT</span>
+      </div>`}
+    </div>
+
+    <div class="card-anim" style=${{marginBottom:16,display:"flex",gap:8}}>
+      <button class="cta-btn press-scale" onClick=${()=>setTab("add")} style=${{flex:lastJob?2:1}}><span style=${{fontSize:18}}>＋</span><span>New Job</span></button>
+      ${lastJob && html`<button class="press-scale" onClick=${()=>onRepeat&&onRepeat(lastJob)} style=${{flex:1,background:"var(--card)",color:"var(--t1)",border:"1px solid var(--border)",borderRadius:"var(--r3)",padding:"15px 14px",fontSize:13,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:6,cursor:"pointer"}} title="Clone last job">↻ Repeat</button>`}
+    </div>
+
+    <${CallCounter} jobsToday=${todayJobs.length}/>
+    <div class="card-anim">
+      <div class="section-label" style=${{marginTop:0,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <span>Quick Quote</span>
+${Number(qqForm.revenue||0)>0&&html`<button class="btn primary sm press-scale" style=${{fontSize:11,padding:"4px 12px"}} onClick=${()=>{
+          if(onStartJob)onStartJob(qqForm);
+          setQqForm({
+            service:"Flat Tire Repair",vehicleType:"Car",tireSource:"Customer supplied",
+            miles:"",tireCost:"",miscCost:"",qty:1,revenue:"",
+            emergency:false,lateNight:false,highway:false,weekend:false
+          });
+          setQqMode("suggested");
+        }}>Start Job →</button>`}      </div>
+      <div style=${{marginBottom:4}}>
+        <div style=${{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}}>
+          ${SERVICE_KEYS.filter(s=>{
+            const sp=(settings.servicePricing||{})[s]||DEFAULT_SERVICE_PRICING[s];
+            return sp && sp.enabled!==false && s!=="Other";
+          }).slice(0,5).map(s=>html`<button key=${s} type="button" class=${"chip press-scale"+(qqForm.service===s?" active":"")} onClick=${()=>qqChange("service",s)} style=${{fontSize:11,padding:"5px 10px"}}>${shortService(s)}</button>`)}
+        </div>
+        <div style=${{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
+          ${VEHICLE_TYPES.map(v=>html`<button key=${v} type="button" class=${"chip press-scale"+(qqForm.vehicleType===v?" active":"")} onClick=${()=>qqChange("vehicleType",v)} style=${{fontSize:11,padding:"5px 10px"}}>${v}</button>`)}
+        </div>
+        <div style=${{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}}>
+          ${FLAGS.map(([k,label])=>html`<button key=${k} type="button" class=${"chip press-scale"+(qqForm[k]?" active":"")} onClick=${()=>qqChange(k,!qqForm[k])} style=${{fontSize:10,padding:"4px 8px"}}>${label}</button>`)}
+        </div>
+      </div>
+      <${QuickQuote} form=${qqForm} settings=${settings} onApply=${qqApply} onFormChange=${qqChange} priceMode=${qqMode} setPriceMode=${setQqMode}/>
+    </div>
+    ${todayJobs.length>0&&html`<div class="card-anim">
+      <div class="section-label" style=${{marginTop:0}}>Today</div>
+      <div class="mini-grid">
+        <div class="mini-box"><strong>${todayJobs.length}</strong><span>Jobs</span></div>
+        <div class="mini-box"><strong>${money(todayJobs.reduce((s,j)=>s+Number(j.revenue||0),0))}</strong><span>Revenue</span></div>
+        <div class="mini-box"><strong style=${{color:"var(--green)"}}>${money(todayJobs.reduce((s,j)=>s+jobGrossProfit(j,settings),0))}</strong><span>Profit</span></div>
+        <div class="mini-box"><strong>${todayJobs.filter(j=>j.status==="Completed").length}</strong><span>Done</span></div>
+      </div>
+    </div>`}
+    ${pendingJobs.length>0&&html`<div class="pending-banner card-anim press-scale" style=${{cursor:"pointer"}} onClick=${()=>setTab("history")}>
+      <div><div class="pending-banner-title">⏳ ${pendingJobs.length} Pending</div><div class="pending-banner-sub">${money(pendingTotal)} to collect</div></div>
+      <span style=${{fontSize:12,fontWeight:700,color:"var(--gold)"}}>Collect →</span>
+    </div>`}
+
+    ${lowStock.length>0 && html`<div class="card-anim press-scale" style=${{cursor:"pointer",background:"linear-gradient(135deg,rgba(220,38,38,.12),rgba(220,38,38,.04))",border:"1px solid rgba(220,38,38,.3)",borderRadius:"var(--r2)",padding:"12px 16px",marginBottom:14,display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}} onClick=${()=>setTab("inventory")}>
+      <div style=${{flex:1,minWidth:0}}>
+        <div style=${{fontSize:11,fontWeight:800,color:"#ef4444",textTransform:"uppercase",letterSpacing:".8px"}}>⚠ Low Stock — Top Sellers</div>
+        <div style=${{fontSize:11,color:"var(--t2)",marginTop:3,fontFamily:'"IBM Plex Mono",monospace'}}>
+          ${lowStock.map(a => a.size + " (" + (a.onHand===0?"out":a.onHand) + ")").join(" · ")}
+        </div>
+      </div>
+      <span style=${{fontSize:12,fontWeight:700,color:"#ef4444",flexShrink:0}}>Order →</span>
+    </div>`}
+
+    <div class="card card-anim"><div class="card-pad">
+      <div style=${{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div><div class="kpi-label">Weekly Target</div><div style=${{display:"flex",alignItems:"baseline",gap:6,marginTop:4}}><span style=${{fontFamily:'"IBM Plex Mono",monospace',fontSize:20,fontWeight:700,color:"var(--t1)",letterSpacing:"-1px"}}>${money(totals.grossProfit)}</span><span style=${{fontSize:12,color:"var(--t3)"}}>/ ${money(settings.weeklyGoal)}</span></div></div>
+        <div style=${{fontSize:11,color:"var(--t3)"}}>${nextFriday()}</div>
+      </div>
+      <div class="goal-track" style=${{marginTop:12,marginBottom:6}}><div class=${"goal-fill "+(goalPct>=100?"full":goalPct>=50?"mid":"low")} style=${{width:goalPct+"%"}}/></div>
+    </div></div>
+    ${top5Tires.length>0&&html`<div class="card-anim">
+      <div class="section-label">Best Sellers</div>
+      <div class="card">
+        ${top5Tires.map((t,i)=>html`<div key=${t.id} class="card-row">
+          <div style=${{display:"flex",alignItems:"center",gap:12}}>
+            <div style=${{width:26,height:26,borderRadius:8,flexShrink:0,background:i===0?"var(--blue-dim)":"var(--s3)",color:i===0?"var(--blue)":"var(--t3)",border:i===0?"1px solid rgba(79,142,247,.25)":"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800}}>${i+1}</div>
+            <div style=${{fontFamily:'"IBM Plex Mono",monospace',fontWeight:700,fontSize:14,color:"var(--t1)",letterSpacing:"-.3px"}}>${t.size||"—"}</div>
+          </div>
+          <span style=${{fontFamily:'"IBM Plex Mono",monospace',fontSize:12,color:"var(--t2)",fontWeight:700}}>${t.sold} sold</span>
+        </div>`)}
+      </div>
+    </div>`}
+    ${sources.length>0&&html`<div class="card-anim">
+      <div class="section-label">Lead Sources</div>
+      <div class="card"><div class="card-pad">
+        ${sources.slice(0,6).map(([srcName,count])=>html`<div class="source-bar" key=${srcName}>
+          <div style=${{fontSize:12,fontWeight:600,color:"var(--t2)",width:130,flexShrink:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>${srcName}</div>
+          <div class="source-bar-track"><div class="source-bar-fill" style=${{width:((count/maxSrc)*100)+"%"}}/></div>
+          <div style=${{fontFamily:'"IBM Plex Mono",monospace',fontSize:11,color:"var(--t3)",width:20,textAlign:"right",flexShrink:0,fontWeight:700}}>${count}</div>
+        </div>`)}
+      </div></div>
+    </div>`}
+    <div class="section-label card-anim" style=${{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+      <span>Recent Jobs</span>
+      ${weekJobs.length>0 && html`<button class="press-scale" onClick=${async ()=>{
+        const topSvc = (() => {
+          const counts={};
+          weekJobs.forEach(j=>{counts[j.service]=(counts[j.service]||0)+1;});
+          const arr=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+          return arr.length?arr[0][0]+" ("+arr[0][1]+")":"";
+        })();
+        // BRANDED share message header
+        const msg = "N & K On Time · "+weekLabel(thisWeek)+"\\n"+
+          weekJobs.length+" jobs · "+money(totals.revenue)+" rev · "+money(totals.grossProfit)+" profit"+
+          (topSvc?"\\nTop: "+topSvc:"");
+        try {
+          if (navigator.share) {
+            await navigator.share({text:msg});
+          } else if (navigator.clipboard) {
+            await navigator.clipboard.writeText(msg);
+            if (window.toast) window.toast("Copied to clipboard","success");
+          }
+        } catch(e) {}
+      }} style=${{background:"var(--s2)",border:"1px solid var(--border)",color:"var(--t1)",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>↗ Share Week</button>`}
+    </div>
+    ${recent.length>0?html`<div class="stack">${recent.map((job,idx)=>{
+      const profit=jobGrossProfit(job,settings);
+      const pg=profit>=70,po=profit>=40&&profit<70;
+      return html`<div class="job-row card-anim press-scale" key=${job.id||idx} style=${{cursor:"pointer",animationDelay:(0.05*idx)+"s"}} onClick=${()=>onRepeat(job)}>
+        <div class="job-icon">🛞</div>
+        <div class="job-main">
+          <div class="job-title">${job.service||"Tire Service"}</div>
+          <div class="job-meta">${job.area||"Lauderhill"} · ${job.date||""}${job.startTime?" "+fmtTime(job.startTime):""}${job.tireSize?" · "+job.tireSize:""}</div>
+          <div style=${{marginTop:7,display:"flex",gap:6}}><span class=${"pill "+(pg?"green":po?"orange":"red")}>${money(profit)}</span>${job.status==="Pending"&&html`<span class="pill gold">Pending</span>`}</div>
+        </div>
+        <div class="job-right">
+          <div style=${{fontFamily:'"IBM Plex Mono",monospace',fontSize:18,fontWeight:700,color:"var(--t1)",letterSpacing:"-1px"}}>${money(job.revenue||0)}</div>
+          <div style=${{fontSize:10,color:"var(--t3)",marginTop:3}}>${job.payment||""}</div>
+        </div>
+      </div>`;
+    })}</div>`:html`<${EmptyState} icon="🛞" title="Your first job awaits" sub="Log a tire change, repair, or roadside call to start tracking your week." action=${html`<button class="btn primary press-scale" onClick=${()=>setTab("add")}>Log First Job</button>`}/>`}
+  </div></div>`;
+}
+
+// ── AddJob ──────────────────────────────────────────────────────────────────
+function AddJob({form,setForm,onSave,settings,recentSizes,inventory,toast}) {
+  const [priceMode,setPriceMode]=useState("suggested");
+  const change=(k,v)=>setForm(p=>({...p,[k]:v}));
+  const calc=calculateJobPricing(form,settings);
+
+  const handleSave=()=>{
+    if(!form.service){ toast&&toast("Pick a service first","err"); return; }
+    const finalPrice = priceMode==="custom" ? Number(form.revenue||0)
+      : priceMode==="premium" ? calc.premiumPrice
+      : calc.suggestedPrice;
+    if(!finalPrice||finalPrice<=0){ toast&&toast("Set a price","err"); return; }
+
+    const job=sanitizeJob({
+      ...form,
+      id:form.id||uid(),
+      revenue:finalPrice,
+      date:form.date||TODAY(),
+      startTime:form.startTime||NOW_HHMM(),
+    });
+
+    if(isTireMaterialService(job.service) && job.tireSource==="Inventory" && job.tireSize){
+      const plan=planInventoryDeduction(inventory,job.tireSize,Number(job.qty||1),job.inventoryItemId);
+      if(plan){
+        job.inventoryDeductions=plan.plan;
+        job.inventoryShortfall=plan.shortfall;
+        job.inventoryDeducted=true;
+      }
+    }
+    onSave(job);
+    setForm(EMPTY_JOB());
+    setPriceMode("suggested");
+    haptic(15);
+    toast&&toast("Job saved","ok");
+  };
+
+  useEffect(()=>{
+    if(priceMode==="suggested") change("revenue",calc.suggestedPrice);
+    else if(priceMode==="premium") change("revenue",calc.premiumPrice);
+  // eslint-disable-next-line
+  },[priceMode,form.service,form.qty,form.miles,form.tireCost,form.miscCost,form.tireSource,form.vehicleType]);
+
+  const inp={width:"100%",border:"1px solid var(--border)",background:"var(--s3)",color:"var(--t1)",borderRadius:"var(--r3)",padding:"12px 14px",outline:"none",fontSize:15};
+  const lbl={fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:".5px",color:"var(--t2)",marginBottom:6,display:"block"};
+
+  return html`<div class="screen"><div class="page page-enter">
+    <div class="section-label">Log a Job</div>
+
+    <div class="card card-pad stack">
+      <div><label style=${lbl}>Service</label>
+        <select value=${form.service||""} onChange=${e=>change("service",e.target.value)} style=${inp}>
+          ${SERVICE_OPTIONS.map(s=>html`<option key=${s} value=${s}>${s}</option>`)}
+        </select>
+      </div>
+      <div><label style=${lbl}>Vehicle</label>
+        <div class="chip-row">
+          ${VEHICLE_TYPES.map(v=>html`<button key=${v} type="button" class=${"chip"+(form.vehicleType===v?" active":"")} onClick=${()=>change("vehicleType",v)}>${v}</button>`)}
+        </div>
+      </div>
+      <div><label style=${lbl}>Date / Start time</label>
+        <div style=${{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          <input type="date" value=${form.date||""} onChange=${e=>change("date",e.target.value)} style=${inp}/>
+          <input type="time" value=${form.startTime||""} onChange=${e=>change("startTime",e.target.value)} style=${inp}/>
+        </div>
+      </div>
+      <div><label style=${lbl}>Service area</label>
+        <${CityInput} value=${form.area||""} onChange=${v=>change("area",v)}/>
+      </div>
+    </div>
+
+    ${isTireMaterialService(form.service)&&html`<div class="card card-pad stack">
+      <div><label style=${lbl}>Tire size</label>
+        <input type="text" placeholder="e.g. 225/65R17" value=${form.tireSize||""} onChange=${e=>change("tireSize",e.target.value)} style=${inp}/>
+        ${recentSizes&&recentSizes.length>0&&html`<div class="chip-row" style=${{marginTop:8}}>
+          ${recentSizes.slice(0,8).map(s=>html`<button key=${s} type="button" class=${"chip sm"+(form.tireSize===s?" active":"")} onClick=${()=>change("tireSize",s)}>${s}</button>`)}
+        </div>`}
+      </div>
+      <div><label style=${lbl}>Tire source</label>
+        <div class="chip-row">
+          ${["Inventory","Bought for this job","Customer supplied"].map(t=>html`<button key=${t} type="button" class=${"chip"+(form.tireSource===t?" active":"")} onClick=${()=>change("tireSource",t)}>${t}</button>`)}
+        </div>
+      </div>
+      ${form.tireSource==="Customer supplied"&&isCustomerSuppliedInstall(form)&&html`
+        <div style=${{padding:"10px 12px",background:"rgba(251,146,60,.08)",border:"1px solid rgba(251,146,60,.3)",borderRadius:8,fontSize:12,color:"var(--t2)"}}>
+          ⚠ Customer-supplied install: flat-rate pricing applies (1 tire $90, 2 = $140, 3 = $190, 4 = $220).
+        </div>`}
+    </div>`}
+
+    <div class="card card-pad stack">
+      <div><label style=${lbl}>Customer name (optional)</label>
+        <input type="text" value=${form.customerName||""} onChange=${e=>change("customerName",e.target.value)} style=${inp}/>
+      </div>
+      <div><label style=${lbl}>Customer phone (optional)</label>
+        <input type="tel" inputMode="tel" value=${form.customerPhone||""} onChange=${e=>change("customerPhone",e.target.value)} style=${inp}/>
+      </div>
+      <div><label style=${lbl}>Source</label>
+        <div class="chip-row">
+          ${SOURCE_QUICK.map(s=>html`<button key=${s.label} type="button" class=${"chip"+(form.source===s.label?" active":"")} onClick=${()=>change("source",s.label)}>${s.icon} ${s.label}</button>`)}
+        </div>
+      </div>
+      <div><label style=${lbl}>Payment</label>
+        <div class="chip-row">
+          ${PAYMENT_OPTIONS.map(p=>html`<button key=${p.label} type="button" class=${"chip"+(form.payment===p.label?" active":"")} onClick=${()=>change("payment",p.label)}>${p.icon} ${p.label}</button>`)}
+        </div>
+      </div>
+      <div><label style=${lbl}>Status</label>
+        <div class="chip-row">
+          ${["Completed","Pending"].map(st=>html`<button key=${st} type="button" class=${"chip"+(form.status===st?" active":"")} onClick=${()=>change("status",st)}>${st}</button>`)}
+        </div>
+      </div>
+      <div><label style=${lbl}>Flags</label>
+        <div class="chip-row">
+          ${FLAGS.map(([k,label])=>html`<button key=${k} type="button" class=${"chip"+(form[k]?" active":"")} onClick=${()=>change(k,!form[k])}>${label}</button>`)}
+        </div>
+      </div>
+      <div><label style=${lbl}>Note (prefix with [c] to show on invoice)</label>
+        <textarea rows="2" value=${form.note||""} onChange=${e=>change("note",e.target.value)} style=${{...inp,resize:"vertical",minHeight:60}}/>
+      </div>
+    </div>
+
+    <div class="section-label">Pricing</div>
+    <${QuickQuote} form=${form} settings=${settings} priceMode=${priceMode} setPriceMode=${setPriceMode}
+      onApply=${v=>change("revenue",v)} onFormChange=${change}/>
+
+    <button class="btn primary press-scale" style=${{marginTop:8,width:"100%",fontSize:16,padding:"16px"}} onClick=${handleSave}>
+      Save Job · ${money(priceMode==="custom"?Number(form.revenue||0):priceMode==="premium"?calc.premiumPrice:calc.suggestedPrice)}
+    </button>
+  </div></div>`;
+}
+
+// ── History row ─────────────────────────────────────────────────────────────
+function HistoryJobRow({job,settings,onEdit,onDelete,onInvoice,onReview}) {
+  const [open,setOpen]=useState(false);
+  const profit=jobGrossProfit(job,settings);
+  const pg=profit>=70,po=profit>=40&&profit<70;
+  return html`<div class="job-row card-anim" style=${{flexDirection:"column",alignItems:"stretch"}}>
+    <div style=${{display:"flex",alignItems:"flex-start",gap:13,cursor:"pointer"}} onClick=${()=>setOpen(!open)}>
+      <div class="job-icon">🛞</div>
+      <div class="job-main">
+        <div class="job-title">${job.service||"Tire Service"}${job.customerName?" — "+job.customerName:""}</div>
+        <div class="job-meta">${job.area||""} · ${job.date||""}${job.tireSize?" · "+job.tireSize:""}${job.qty>1?" ×"+job.qty:""}</div>
+        <div style=${{marginTop:6,display:"flex",gap:6,flexWrap:"wrap"}}>
+          <span class=${"pill "+(pg?"green":po?"orange":"red")}>${money(profit)}</span>
+          ${job.status==="Pending"&&html`<span class="pill gold">Pending</span>`}
+          ${job.payment&&html`<span class="pill gray">${job.payment}</span>`}
+        </div>
+      </div>
+      <div class="job-right">
+        <div style=${{fontFamily:'"IBM Plex Mono",monospace',fontSize:18,fontWeight:700,color:"var(--t1)",letterSpacing:"-1px"}}>${money(job.revenue||0)}</div>
+        <div style=${{fontSize:10,color:"var(--t3)",marginTop:3}}>${job.startTime?fmtTime(job.startTime):""}</div>
+      </div>
+    </div>
+    ${open&&html`<div style=${{borderTop:"1px solid var(--border)",paddingTop:10,marginTop:10,display:"flex",gap:6,flexWrap:"wrap"}}>
+      <button class="btn sm" onClick=${e=>{e.stopPropagation();onInvoice&&onInvoice(job);}}>📄 Invoice</button>
+      ${job.customerPhone&&html`<button class="btn sm" onClick=${e=>{e.stopPropagation();onReview&&onReview(job);}}>⭐ Review SMS</button>`}
+      <button class="btn sm" onClick=${e=>{e.stopPropagation();onEdit&&onEdit(job);}}>✏️ Edit</button>
+      <button class="btn sm danger" onClick=${e=>{e.stopPropagation();onDelete&&onDelete(job);}}>🗑 Delete</button>
+    </div>`}
+  </div>`;
+}
+
+// ── History ─────────────────────────────────────────────────────────────────
+function History({jobs,settings,onEdit,onDelete,onInvoice,onReview}) {
+  const groups=useMemo(()=>groupByWeek(jobs),[jobs]);
+  if(!jobs||jobs.length===0){
+    return html`<div class="screen"><div class="page page-enter">
+      <${EmptyState} icon="📋" title="No jobs yet" sub="Logged jobs will appear here."/>
+    </div></div>`;
+  }
+  return html`<div class="screen"><div class="page page-enter">
+    <div class="section-label">Job History</div>
+    ${groups.map(([weekStart,weekJobs])=>{
+      const sum=weekSummary(weekJobs,settings);
+      return html`<div key=${weekStart} class="stack" style=${{marginBottom:18}}>
+        <div style=${{display:"flex",justifyContent:"space-between",alignItems:"baseline",padding:"4px 4px"}}>
+          <div style=${{fontSize:12,fontWeight:800,color:"var(--t2)",textTransform:"uppercase",letterSpacing:".5px"}}>${weekLabel(weekStart)}</div>
+          <div style=${{fontSize:12,color:"var(--t3)",fontFamily:'"IBM Plex Mono",monospace'}}>${money(sum.revenue)} · ${money(sum.grossProfit)} P</div>
+        </div>
+        ${weekJobs.map(j=>html`<${HistoryJobRow} key=${j.id} job=${j} settings=${settings} onEdit=${onEdit} onDelete=${onDelete} onInvoice=${onInvoice} onReview=${onReview}/>`)}
+      </div>`;
+    })}
+  </div></div>`;
+}
+
+// ── Expenses ────────────────────────────────────────────────────────────────
+function Expenses({expenses,setExpenses,toast}) {
+  const [name,setName]=useState("");
+  const [amount,setAmount]=useState("");
+  const [date,setDate]=useState(TODAY());
+  const total=expenses.reduce((t,e)=>t+Number(e.amount||0),0);
+
+  const add=()=>{
+    if(!name.trim()||!Number(amount)){ toast&&toast("Name and amount required","err"); return; }
+    setExpenses(prev=>[...prev,{id:uid(),name:name.trim(),amount:Number(amount),date:date||TODAY()}]);
+    setName(""); setAmount(""); setDate(TODAY());
+    haptic(10); toast&&toast("Expense added","ok");
+  };
+  const del=id=>setExpenses(prev=>prev.filter(e=>e.id!==id));
+
+  const inp={width:"100%",border:"1px solid var(--border)",background:"var(--s3)",color:"var(--t1)",borderRadius:"var(--r3)",padding:"12px 14px",outline:"none",fontSize:15};
+  const lbl={fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:".5px",color:"var(--t2)",marginBottom:6,display:"block"};
+
+  return html`<div class="screen"><div class="page page-enter">
+    <div class="section-label">Expenses</div>
+    <div class="card card-pad stack">
+      <div><label style=${lbl}>Description</label>
+        <input type="text" value=${name} onChange=${e=>setName(e.target.value)} placeholder="e.g. Tire restock, fuel, supplies" style=${inp}/>
+      </div>
+      <div style=${{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+        <div><label style=${lbl}>Amount</label>
+          <input type="number" inputMode="decimal" min="0" value=${amount} onChange=${e=>setAmount(e.target.value)} placeholder="0.00" style=${inp}/>
+        </div>
+        <div><label style=${lbl}>Date</label>
+          <input type="date" value=${date} onChange=${e=>setDate(e.target.value)} style=${inp}/>
+        </div>
+      </div>
+      <button class="btn primary press-scale" onClick=${add}>+ Add Expense</button>
+    </div>
+
+    <div class="card card-pad stack">
+      <div style=${{display:"flex",justifyContent:"space-between",alignItems:"baseline"}}>
+        <div style=${{fontWeight:700,color:"var(--t1)"}}>Recent Expenses</div>
+        <div style=${{fontFamily:'"IBM Plex Mono",monospace',fontWeight:700,color:"var(--t1)"}}>${money(total)}</div>
+      </div>
+      ${expenses.length===0?html`<div style=${{color:"var(--t3)",fontSize:13,textAlign:"center",padding:"20px 0"}}>No expenses logged yet.</div>`:
+        expenses.slice().reverse().map(e=>html`<div key=${e.id} style=${{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:"1px solid var(--border)"}}>
+          <div>
+            <div style=${{fontWeight:600,color:"var(--t1)"}}>${e.name}</div>
+            <div style=${{fontSize:11,color:"var(--t3)"}}>${e.date||""}</div>
+          </div>
+          <div style=${{display:"flex",alignItems:"center",gap:10}}>
+            <div style=${{fontFamily:'"IBM Plex Mono",monospace',fontWeight:700,color:"var(--t1)"}}>${money(e.amount)}</div>
+            <button class="btn sm danger" onClick=${()=>del(e.id)}>🗑</button>
+          </div>
+        </div>`)}
+    </div>
+  </div></div>`;
+}
+
+// ── Payouts ─────────────────────────────────────────────────────────────────
+function Payouts({jobs,expenses,settings}) {
+  const groups=useMemo(()=>groupByWeek(jobs),[jobs]);
+  return html`<div class="screen"><div class="page page-enter">
+    <div class="section-label">Owner Payouts</div>
+    <div class="card card-pad">
+      <div style=${{fontSize:12,color:"var(--t3)",lineHeight:1.5}}>
+        Splits: <strong style=${{color:"var(--t2)"}}>${settings.owner1Name||"Owner 1"}</strong> ${settings.profitSplit1||50}% ·
+        <strong style=${{color:"var(--t2)"}}>${settings.owner2Name||"Owner 2"}</strong> ${settings.profitSplit2||50}%
+      </div>
+    </div>
+    ${groups.length===0?html`<${EmptyState} icon="💰" title="No payouts yet" sub="Log jobs to see weekly payouts here."/>`:""}
+    ${groups.map(([weekStart,weekJobs])=>{
+      const sum=weekSummary(weekJobs,settings);
+      const fixed=weeklyFixed(settings);
+      const net=r2(sum.grossProfit-fixed);
+      const o1=r2(net*Number(settings.profitSplit1||50)/100);
+      const o2=r2(net*Number(settings.profitSplit2||50)/100);
+      return html`<div key=${weekStart} class="card card-pad stack">
+        <div style=${{fontSize:12,fontWeight:800,color:"var(--t2)",textTransform:"uppercase",letterSpacing:".5px"}}>${weekLabel(weekStart)}</div>
+        <div style=${{display:"grid",gridTemplateColumns:"1fr auto",gap:8,fontSize:13}}>
+          <div style=${{color:"var(--t2)"}}>Revenue</div><div style=${{textAlign:"right",fontFamily:'"IBM Plex Mono",monospace',color:"var(--t1)"}}>${money(sum.revenue)}</div>
+          <div style=${{color:"var(--t2)"}}>Direct costs</div><div style=${{textAlign:"right",fontFamily:'"IBM Plex Mono",monospace',color:"var(--t3)"}}>−${money(sum.directCosts)}</div>
+          <div style=${{color:"var(--t2)"}}>Weekly fixed</div><div style=${{textAlign:"right",fontFamily:'"IBM Plex Mono",monospace',color:"var(--t3)"}}>−${money(fixed)}</div>
+          <div style=${{fontWeight:700,paddingTop:6,borderTop:"1px solid var(--border)",color:"var(--t1)"}}>Net</div>
+          <div style=${{textAlign:"right",fontFamily:'"IBM Plex Mono",monospace',fontWeight:700,paddingTop:6,borderTop:"1px solid var(--border)",color:net>=0?"var(--green)":"var(--red)"}}>${money(net)}</div>
+        </div>
+        ${(settings.owner1Active!==false||settings.owner2Active!==false)&&html`<div style=${{display:"grid",gridTemplateColumns:"1fr auto",gap:8,padding:"10px 12px",background:"var(--s3)",borderRadius:8,fontSize:13}}>
+          ${settings.owner1Active!==false&&html`<div style=${{color:"var(--t2)"}}>${settings.owner1Name||"Owner 1"}</div>
+          <div style=${{textAlign:"right",fontFamily:'"IBM Plex Mono",monospace',fontWeight:700,color:"var(--green)"}}>${money(o1)}</div>`}
+          ${settings.owner2Active!==false&&html`<div style=${{color:"var(--t2)"}}>${settings.owner2Name||"Owner 2"}</div>
+          <div style=${{textAlign:"right",fontFamily:'"IBM Plex Mono",monospace',fontWeight:700,color:"var(--green)"}}>${money(o2)}</div>`}
+        </div>`}
+      </div>`;
+    })}
+  </div></div>`;
+}
+
+// ── Inventory ───────────────────────────────────────────────────────────────
+function Inventory({inventory,setInventory,toast}) {
+  const [size,setSize]=useState("");
+  const [brand,setBrand]=useState("");
+  const [condition,setCondition]=useState("New");
+  const [qty,setQty]=useState("");
+  const [cost,setCost]=useState("");
+  const [filter,setFilter]=useState("");
+  const [compact,setCompact]=useState(()=>load("nk_inv_compact",false));
+
+  useEffect(()=>persist("nk_inv_compact",compact),[compact]);
+
+  const totalUnits=inventory.reduce((t,i)=>t+Number(i.qty||0),0);
+  const totalValue=inventory.reduce((t,i)=>t+Number(i.qty||0)*Number(i.cost||0),0);
+
+  const add=()=>{
+    if(!size.trim()){ toast&&toast("Tire size required","err"); return; }
+    const norm=normalizeTireSize(size)||size.trim();
+    setInventory(prev=>{
+      const arr=Array.isArray(prev)?prev.slice():[];
+      const matchIdx=arr.findIndex(i=>normalizeTireSize(i.size)===normalizeTireSize(norm) && (i.condition||"New").toLowerCase()===condition.toLowerCase());
+      if(matchIdx>=0){
+        arr[matchIdx]={...arr[matchIdx], qty:Number(arr[matchIdx].qty||0)+Number(qty||1), cost:Number(cost||arr[matchIdx].cost||0)};
+      } else {
+        arr.push(sanitizeInvItem({id:uid(),size:norm,brand,condition,qty:Number(qty||1),cost:Number(cost||0)}));
+      }
+      return arr;
+    });
+    setSize(""); setBrand(""); setQty(""); setCost("");
+    haptic(10); toast&&toast("Added to inventory","ok");
+  };
+
+  const adjustQty=(id,delta)=>{
+    setInventory(prev=>(Array.isArray(prev)?prev:[]).map(i=>i.id===id?{...i,qty:Math.max(0,Number(i.qty||0)+delta)}:i));
+  };
+  const del=id=>setInventory(prev=>(Array.isArray(prev)?prev:[]).filter(i=>i.id!==id));
+
+  const filtered=inventory.filter(i=>{
+    if(!filter.trim()) return true;
+    const q=filter.toLowerCase();
+    return (i.size||"").toLowerCase().includes(q)||(i.brand||"").toLowerCase().includes(q);
+  }).sort((a,b)=>(a.size||"").localeCompare(b.size||""));
+
+  const inp={width:"100%",border:"1px solid var(--border)",background:"var(--s3)",color:"var(--t1)",borderRadius:"var(--r3)",padding:"12px 14px",outline:"none",fontSize:15};
+  const lbl={fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:".5px",color:"var(--t2)",marginBottom:6,display:"block"};
+
+  return html`<div class="screen"><div class="page page-enter">
+    <div class="section-label">Inventory</div>
+
+    <div class="card card-pad stack">
+      <div style=${{display:"grid",gridTemplateColumns:"2fr 1fr",gap:8}}>
+        <div><label style=${lbl}>Tire size</label>
+          <input type="text" value=${size} onChange=${e=>setSize(e.target.value)} placeholder="225/65R17" style=${inp}/>
+        </div>
+        <div><label style=${lbl}>Condition</label>
+          <select value=${condition} onChange=${e=>setCondition(e.target.value)} style=${inp}>
+            <option>New</option><option>Used</option>
+          </select>
+        </div>
+      </div>
+      <div><label style=${lbl}>Brand (optional)</label>
+        <input type="text" value=${brand} onChange=${e=>setBrand(e.target.value)} style=${inp}/>
+      </div>
+      <div style=${{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+        <div><label style=${lbl}>Quantity</label>
+          <input type="number" min="1" inputMode="numeric" value=${qty} onChange=${e=>setQty(e.target.value)} placeholder="1" style=${inp}/>
+        </div>
+        <div><label style=${lbl}>Unit cost ($)</label>
+          <input type="number" min="0" inputMode="decimal" value=${cost} onChange=${e=>setCost(e.target.value)} placeholder="0.00" style=${inp}/>
+        </div>
+      </div>
+      <button class="btn primary press-scale" onClick=${add}>+ Add Tire</button>
+    </div>
+
+    <div class="card card-pad stack">
+      <div style=${{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
+        <div>
+          <div style=${{fontWeight:700,color:"var(--t1)"}}>${totalUnits} units</div>
+          <div style=${{fontSize:11,color:"var(--t3)"}}>Value: ${money(totalValue)}</div>
+        </div>
+        <button class="btn sm" onClick=${()=>setCompact(!compact)}>${compact?"Detail":"Compact"}</button>
+      </div>
+      <input type="search" value=${filter} onChange=${e=>setFilter(e.target.value)} placeholder="Search by size or brand…" style=${inp}/>
+      ${filtered.length===0?html`<div style=${{color:"var(--t3)",fontSize:13,textAlign:"center",padding:"20px 0"}}>No inventory items match.</div>`:
+        filtered.map(i=>html`<div key=${i.id} style=${{display:"flex",alignItems:"center",gap:10,padding:"10px 0",borderBottom:"1px solid var(--border)"}}>
+          <div style=${{flex:1,minWidth:0}}>
+            <div style=${{fontWeight:700,color:"var(--t1)",fontFamily:'"IBM Plex Mono",monospace'}}>${i.size}${i.condition&&i.condition.toLowerCase()==="used"?html` <span style=${{fontSize:10,padding:"2px 6px",background:"var(--s3)",borderRadius:4,marginLeft:6,color:"var(--t3)"}}>USED</span>`:""}</div>
+            ${!compact&&html`<div style=${{fontSize:11,color:"var(--t3)"}}>${i.brand||""}${i.cost?" · "+money(i.cost)+" each":""}</div>`}
+          </div>
+          <div style=${{display:"flex",alignItems:"center",gap:4}}>
+            <button class="btn sm" onClick=${()=>adjustQty(i.id,-1)}>−</button>
+            <div style=${{minWidth:32,textAlign:"center",fontFamily:'"IBM Plex Mono",monospace',fontWeight:700,color:i.qty<=0?"var(--red)":"var(--t1)"}}>${i.qty}</div>
+            <button class="btn sm" onClick=${()=>adjustQty(i.id,1)}>+</button>
+            <button class="btn sm danger" onClick=${()=>del(i.id)}>🗑</button>
+          </div>
+        </div>`)}
+    </div>
+  </div></div>`;
+}
+
+// ── Settings ────────────────────────────────────────────────────────────────
+function Settings({settings,setSettings,jobs,inventory,toast}) {
+  const update=(k,v)=>setSettings(p=>({...p,[k]:v}));
+  const inp={width:"100%",border:"1px solid var(--border)",background:"var(--s3)",color:"var(--t1)",borderRadius:"var(--r3)",padding:"12px 14px",outline:"none",fontSize:15};
+  const lbl={fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:".5px",color:"var(--t2)",marginBottom:6,display:"block"};
+
+  const exportCSV=()=>{
+    const rows=[["Date","Service","Area","Customer","Phone","Vehicle","Tire Size","Qty","Revenue","Tire Cost","Misc","Miles","Payment","Status","Source"]];
+    (jobs||[]).forEach(j=>rows.push([
+      j.date||"",j.service||"",j.area||"",j.customerName||"",j.customerPhone||"",j.vehicleType||"",j.tireSize||"",
+      j.qty||1,j.revenue||0,j.tireCost||0,j.miscCost||0,j.miles||0,j.payment||"",j.status||"",j.source||""
+    ]));
+    const csv=rows.map(r=>r.map(c=>{const s=String(c);return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}).join(",")).join("\n");
+    const blob=new Blob([csv],{type:"text/csv"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a"); a.href=url; a.download="nk-on-time-"+TODAY()+".csv"; a.click();
+    URL.revokeObjectURL(url);
+    toast&&toast("CSV exported","ok");
+  };
+  const exportBackup=()=>{
+    const data={settings,jobs,inventory,exportedAt:new Date().toISOString(),version:"nk-v10"};
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a"); a.href=url; a.download="nk-on-time-backup-"+TODAY()+".json"; a.click();
+    URL.revokeObjectURL(url);
+    toast&&toast("Backup exported","ok");
+  };
+
+  return html`<div class="screen"><div class="page page-enter">
+    <div class="section-label">Business</div>
+    <div class="card card-pad stack">
+      <div><label style=${lbl}>Business name</label>
+        <input type="text" value=${settings.businessName||""} onChange=${e=>update("businessName",e.target.value)} style=${inp}/>
+      </div>
+      <div><label style=${lbl}>Google review URL</label>
+        <input type="url" value=${settings.googleReviewUrl||""} onChange=${e=>update("googleReviewUrl",e.target.value)} placeholder="https://g.page/r/…" style=${inp}/>
+        <div style=${{fontSize:11,color:"var(--t3)",marginTop:4}}>Used for the "Send Review" SMS template.</div>
+      </div>
+    </div>
+
+    <div class="section-label">Owners &amp; Splits</div>
+    <div class="card card-pad stack">
+      <div style=${{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+        <div><label style=${lbl}>Owner 1 name</label><input type="text" value=${settings.owner1Name||""} onChange=${e=>update("owner1Name",e.target.value)} style=${inp}/></div>
+        <div><label style=${lbl}>Split %</label><input type="number" min="0" max="100" value=${settings.profitSplit1||50} onChange=${e=>update("profitSplit1",Number(e.target.value))} style=${inp}/></div>
+      </div>
+      <div style=${{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+        <div><label style=${lbl}>Owner 2 name</label><input type="text" value=${settings.owner2Name||""} onChange=${e=>update("owner2Name",e.target.value)} style=${inp}/></div>
+        <div><label style=${lbl}>Split %</label><input type="number" min="0" max="100" value=${settings.profitSplit2||50} onChange=${e=>update("profitSplit2",Number(e.target.value))} style=${inp}/></div>
+      </div>
+    </div>
+
+    <div class="section-label">Pricing</div>
+    <div class="card card-pad stack">
+      <div style=${{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+        <div><label style=${lbl}>Cost per mile ($)</label><input type="number" step="0.01" value=${settings.costPerMile||0.65} onChange=${e=>update("costPerMile",Number(e.target.value))} style=${inp}/></div>
+        <div><label style=${lbl}>Skip threshold ($)</label><input type="number" value=${settings.skipThreshold||70} onChange=${e=>update("skipThreshold",Number(e.target.value))} style=${inp}/></div>
+      </div>
+      <div style=${{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+        <div><label style=${lbl}>Default target profit ($)</label><input type="number" value=${settings.defaultTargetProfit||100} onChange=${e=>update("defaultTargetProfit",Number(e.target.value))} style=${inp}/></div>
+        <div><label style=${lbl}>Weekly goal ($)</label><input type="number" value=${settings.weeklyGoal||1200} onChange=${e=>update("weeklyGoal",Number(e.target.value))} style=${inp}/></div>
+      </div>
+    </div>
+
+    <div class="section-label">Recurring fixed expenses</div>
+    <div class="card card-pad stack">
+      <div style=${{fontSize:12,color:"var(--t3)"}}>Toggle items off to exclude them from the weekly fixed allocation.</div>
+      ${(settings.expenses||[]).map(e=>html`<div key=${e.id} style=${{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid var(--border)"}}>
+        <input type="checkbox" checked=${e.active!==false} onChange=${ev=>update("expenses",(settings.expenses||[]).map(x=>x.id===e.id?{...x,active:ev.target.checked}:x))}/>
+        <input type="text" value=${e.name} onChange=${ev=>update("expenses",(settings.expenses||[]).map(x=>x.id===e.id?{...x,name:ev.target.value}:x))} style=${{...inp,padding:"6px 8px",flex:1}}/>
+        <input type="number" value=${e.amount} onChange=${ev=>update("expenses",(settings.expenses||[]).map(x=>x.id===e.id?{...x,amount:Number(ev.target.value)}:x))} style=${{...inp,padding:"6px 8px",width:90,textAlign:"right",fontFamily:'"IBM Plex Mono",monospace'}}/>
+      </div>`)}
+      <button class="btn sm" onClick=${()=>update("expenses",[...(settings.expenses||[]),{id:uid(),name:"New expense",amount:0,active:true}])}>+ Add fixed expense</button>
+    </div>
+
+    <div class="section-label">Data</div>
+    <div class="card card-pad stack">
+      <div style=${{display:"flex",gap:8,flexWrap:"wrap"}}>
+        <button class="btn" onClick=${exportCSV}>📊 Export jobs CSV</button>
+        <button class="btn" onClick=${exportBackup}>💾 Backup JSON</button>
+      </div>
+    </div>
+
+    <div style=${{textAlign:"center",fontSize:11,color:"var(--t3)",padding:"20px 0",fontFamily:'"IBM Plex Mono",monospace'}}>
+      N &amp; K On Time v10 · Firebase Sync
+    </div>
+  </div></div>`;
+}
+
+// ── ToastHost ───────────────────────────────────────────────────────────────
+function ToastHost({toasts}) {
+  return html`<div style=${{position:"fixed",bottom:88,left:0,right:0,display:"flex",flexDirection:"column",alignItems:"center",gap:8,pointerEvents:"none",zIndex:9999,padding:"0 16px"}}>
+    ${toasts.map(t=>html`<div key=${t.id} style=${{
+      background:t.kind==="err"?"linear-gradient(135deg,#ef4444,#dc2626)":t.kind==="ok"?"linear-gradient(135deg,#22c55e,#16a34a)":"linear-gradient(135deg,#3b82f6,#2563eb)",
+      color:"#fff",padding:"10px 20px",borderRadius:24,fontSize:13,fontWeight:600,
+      boxShadow:"0 6px 20px rgba(0,0,0,.45)",animation:"toastIn .25s ease",maxWidth:"100%"
+    }}>${t.msg}</div>`)}
+  </div>`;
+}
+
+// ── App ─────────────────────────────────────────────────────────────────────
+const WIPE_KEY = "nk_inv_wiped_at";
+
+function App() {
+  // Auth
+  const [user,setUser]=useState(null);
+  const [authReady,setAuthReady]=useState(false);
+  const [loading,setLoading]=useState(true);
+
+  // Core state — local-first with Firebase sync overlay
+  const [jobs,setJobs]=useState(()=>migrateOldJobs());
+  const [settings,setSettings]=useState(()=>({...DEFAULT_SETTINGS,...load(KEYS.settings,{})}));
+  const [inventory,setInventory]=useState(()=>{
+    const stored=load(KEYS.inventory,null);
+    return Array.isArray(stored)?stored:DEFAULT_INVENTORY.map(sanitizeInvItem);
+  });
+  const [expenses,setExpenses]=useState(()=>load(KEYS.expenses,[]));
+
+  // UI
+  const [tab,setTab]=useState("dashboard");
+  const [form,setForm]=useState(()=>EMPTY_JOB());
+  const [recentSizes,setRecentSizes]=useState(()=>load(KEYS.sizes,[]));
+  const [syncStatus,setSyncStatus]=useState("local");
+  const [toasts,setToasts]=useState([]);
+  const toastIdRef=useRef(0);
+
+  const toast=useCallback((msg,kind)=>{
+    const id=++toastIdRef.current;
+    setToasts(p=>[...p,{id,msg,kind}]);
+    setTimeout(()=>setToasts(p=>p.filter(t=>t.id!==id)),2400);
+  },[]);
+
+  // Auth listener
+  useEffect(()=>{
+    if(!_auth){ setUser({uid:"local"}); setAuthReady(true); setLoading(false); return; }
+    const unsub=_auth.onAuthStateChanged(u=>{
+      setUser(u||null);
+      setAuthReady(true);
+      setLoading(false);
+    });
+    return ()=>unsub();
+  },[]);
+
+  // Persist locally
+  useEffect(()=>persist(KEYS.jobs,jobs),[jobs]);
+  useEffect(()=>persist(KEYS.settings,settings),[settings]);
+  useEffect(()=>persist(KEYS.inventory,inventory),[inventory]);
+  useEffect(()=>persist(KEYS.expenses,expenses),[expenses]);
+  useEffect(()=>persist(KEYS.sizes,recentSizes),[recentSizes]);
+
+  // Firebase sync overlay
+  useEffect(()=>{
+    if(!user||isLocalUser(user)||!_db){ setSyncStatus("local"); return; }
+    setSyncStatus("syncing");
+    const unsubs=[];
+    let received=0;
+    const checkConnected=()=>{ received++; if(received>=4) setSyncStatus("connected"); };
+
+    unsubs.push(fbListen(jobCol(),docs=>{
+      const wipedAt=Number(load(WIPE_KEY,0))||0;
+      if(Date.now()-wipedAt < 10000) { checkConnected(); return; }
+      const hyd=docs.map(hydrateJobDoc).map(sanitizeJob);
+      setJobs(hyd);
+      checkConnected();
+    }));
+    unsubs.push(fbListen(invCol(),docs=>{
+      const wipedAt=Number(load(WIPE_KEY,0))||0;
+      if(Date.now()-wipedAt < 10000) { checkConnected(); return; }
+      setInventory(docs.map(sanitizeInvItem));
+      checkConnected();
+    }));
+    unsubs.push(fbListen(expCol(),docs=>{
+      setExpenses(docs);
+      checkConnected();
+    }));
+    if(settingDoc()){
+      const u=settingDoc().onSnapshot(d=>{
+        if(d.exists){
+          const h=hydrateSettingsDoc(d.data());
+          setSettings(p=>({...p,...h}));
+        }
+        checkConnected();
+      },e=>console.warn("settings sync:",e));
+      unsubs.push(u);
+    }
+    return ()=>unsubs.forEach(u=>{try{u();}catch{}});
+  },[user]);
+
+  // Job operations
+  const saveJob=useCallback(async(job)=>{
+    setJobs(prev=>{
+      const i=prev.findIndex(j=>j.id===job.id);
+      const arr=prev.slice();
+      if(i>=0) arr[i]=job; else arr.push(job);
+      return arr;
+    });
+    if(job.tireSize){
+      setRecentSizes(prev=>[job.tireSize,...prev.filter(s=>s!==job.tireSize)].slice(0,12));
+    }
+    if(user&&!isLocalUser(user)) await fbSet(jobCol(),job.id,job);
+  },[user]);
+
+  const deleteJob=useCallback(async(j)=>{
+    if(!confirm("Delete this job?")) return;
+    setJobs(prev=>prev.filter(x=>x.id!==j.id));
+    if(j.inventoryDeductions) restoreInventoryDeduction(j.inventoryDeductions,setInventory);
+    if(user&&!isLocalUser(user)) await fbDel(jobCol(),j.id);
+    toast("Job deleted","ok");
+  },[user,toast]);
+
+  const editJob=useCallback((j)=>{ setForm({...j}); setTab("add"); },[]);
+  const onInvoice=useCallback((j)=>{ sendInvoice(j,settings); },[settings]);
+  const onReview=useCallback((j)=>{
+    openReviewSMS(j.customerPhone,settings.googleReviewUrl,j.customerName,j.service,j.area);
+  },[settings]);
+
+  // Settings sync (debounced)
+  useEffect(()=>{
+    if(!user||isLocalUser(user)||!settingDoc()) return;
+    const t=setTimeout(()=>{
+      try{ settingDoc().set(settings,{merge:true}); }catch(e){console.warn(e);}
+    },500);
+    return ()=>clearTimeout(t);
+  },[settings,user]);
+
+  // Inventory sync (debounced batch)
+  useEffect(()=>{
+    if(!user||isLocalUser(user)||!_db) return;
+    const t=setTimeout(()=>{
+      const ops=inventory.map(i=>({type:"set",ref:invCol().doc(String(i.id)),data:i}));
+      fbBatch(ops);
+    },800);
+    return ()=>clearTimeout(t);
+  },[inventory,user]);
+
+  // Expenses sync (debounced batch)
+  useEffect(()=>{
+    if(!user||isLocalUser(user)||!_db) return;
+    const t=setTimeout(()=>{
+      const ops=expenses.map(e=>({type:"set",ref:expCol().doc(String(e.id)),data:e}));
+      fbBatch(ops);
+    },800);
+    return ()=>clearTimeout(t);
+  },[expenses,user]);
+
+  const onSignOut=useCallback(()=>{
+    if(_auth) _auth.signOut().catch(()=>{});
+  },[]);
+
+  // Loading screen
+  if(loading){
+    return html`<div style=${{height:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"#0a0a0f"}}>
+      <img src=${LOGO_SRC} alt="NK" onError=${e=>e.target.style.display="none"} class="logo-pulse" style=${{width:80,height:80,objectFit:"contain",borderRadius:18,marginBottom:16,boxShadow:"0 4px 20px rgba(0,0,0,.6)"}}/>
+      <div class="shimmer-text" style=${{fontSize:20,fontWeight:700}}>N &amp; K On Time</div>
+      <div style=${{color:"#555",fontSize:12,marginTop:6}}>Loading…</div>
+    </div>`;
+  }
+
+  // Auth screen
+  if(_auth && authReady && !user){
+    return html`<${AuthScreen} onAuth=${u=>setUser(u)}/>`;
+  }
+
+  // Bottom nav tabs
+  const tabs=[
+    {id:"dashboard",label:"Home",ico:"🏠"},
+    {id:"add",label:"Add",ico:"＋"},
+    {id:"history",label:"History",ico:"📋"},
+    {id:"inventory",label:"Stock",ico:"🛞"},
+    {id:"expenses",label:"$",ico:"💵"},
+    {id:"payouts",label:"Pay",ico:"💰"},
+    {id:"settings",label:"Settings",ico:"⚙️"},
+  ];
+
+  return html`<div class="app" style=${{height:"100%",display:"flex",flexDirection:"column"}}>
+    <${Header} syncStatus=${syncStatus} onSignOut=${user&&!isLocalUser(user)?onSignOut:null}/>
+    <div style=${{flex:1,overflow:"auto",WebkitOverflowScrolling:"touch"}}>
+      ${tab==="dashboard"&&html`<${Dashboard} jobs=${jobs} settings=${settings} setTab=${setTab} inventory=${inventory} onRepeat=${j=>{setForm({...j,id:"",date:TODAY(),startTime:""});setTab("add");}} onStartJob=${()=>setTab("add")}/>`}
+      ${tab==="add"&&html`<${AddJob} form=${form} setForm=${setForm} onSave=${saveJob} settings=${settings} recentSizes=${recentSizes} inventory=${inventory} toast=${toast}/>`}
+      ${tab==="history"&&html`<${History} jobs=${jobs} settings=${settings} onEdit=${editJob} onDelete=${deleteJob} onInvoice=${onInvoice} onReview=${onReview}/>`}
+      ${tab==="inventory"&&html`<${Inventory} inventory=${inventory} setInventory=${setInventory} toast=${toast}/>`}
+      ${tab==="expenses"&&html`<${Expenses} expenses=${expenses} setExpenses=${setExpenses} toast=${toast}/>`}
+      ${tab==="payouts"&&html`<${Payouts} jobs=${jobs} expenses=${expenses} settings=${settings}/>`}
+      ${tab==="settings"&&html`<${Settings} settings=${settings} setSettings=${setSettings} jobs=${jobs} inventory=${inventory} toast=${toast}/>`}
+    </div>
+    <div class="bottom-nav">
+      ${tabs.map(t=>html`<button key=${t.id} class=${"nav-btn"+(tab===t.id?" active":"")} data-id=${t.id} onClick=${()=>{setTab(t.id);haptic(8);}}>
+        <div class="ico">${t.ico}</div>
+        <div>${t.label}</div>
+      </button>`)}
+    </div>
+    <${ToastHost} toasts=${toasts}/>
+  </div>`;
+}
+
+// ── Mount ───────────────────────────────────────────────────────────────────
+const _rootEl = document.getElementById("root");
+if (_rootEl) {
+  const root = ReactDOM.createRoot(_rootEl);
+  root.render(React.createElement(ErrorBoundary, null, React.createElement(App)));
+}
+</script>
+</body>
+</html>
