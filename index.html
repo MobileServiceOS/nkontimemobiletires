@@ -1322,9 +1322,10 @@ function sendInvoice(job,settings) {
   doc.save("NKOnTime-Invoice-"+(job.date||"").replace(/-/g,"")+"-"+name+".pdf");
 }
 function migrateOldJobs() {
-  // Migration: pulls jobs from any prior localStorage namespace (Wheel Rush install
-  // upgrading to N&K, or just earlier versions). Safe no-op if nothing matches.
-  const OLD=["wr-jobs-v5","wr-upgraded-jobs-v1","wr2-jobs-v1","wr2-jobs-v2","wheelrush_jobs"];
+  // Migration: pulls jobs from any prior localStorage namespace into the current
+  // store. Safe no-op if nothing matches. Kept for users upgrading from earlier
+  // versions or rebranded installs.
+  const OLD=["nk-jobs-v1","jobs-v5","jobs-upgraded-v1","mt-jobs-v1","mt-jobs-v2","legacy_jobs"];
   const cur=load(KEYS.jobs,[]);const ids=new Set(cur.map(j=>String(j.id)));
   let mg=[...cur],cnt=0;
   OLD.forEach(k=>{try{const o=load(k,[]);if(Array.isArray(o))o.forEach(j=>{if(!ids.has(String(j.id))){mg.push({...j,id:String(j.id||Date.now()),source:j.source||"Google",tireCost:j.tireCost||j.cost||0,miscCost:j.miscCost||0});ids.add(String(j.id));cnt++;}});}catch{}});
@@ -1507,7 +1508,7 @@ function AuthScreen({onAuth}) {
   return html`<div style=${{height:"100%",display:"flex",flexDirection:"column",background:"#0a0a0a",padding:"0 24px",paddingTop:"env(safe-area-inset-top)"}}>
     <div style=${{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",paddingBottom:16}}>
       <img src=${LOGO_SRC} alt="N & K On Time Mobile Tires" onError=${e=>e.target.style.display="none"} style=${{width:88,height:88,objectFit:"contain",borderRadius:18,marginBottom:20,boxShadow:"0 4px 20px rgba(0,0,0,.6), 0 0 0 1px rgba(79,142,247,.15)",animation:"scaleIn .5s ease"}}/>
-      <div class="shimmer-text" style=${{fontSize:24,fontWeight:700,marginBottom:4,textAlign:"center",lineHeight:1.2}}>N &amp; K On Time</div>
+      <div class="shimmer-text" style=${{fontSize:24,fontWeight:700,marginBottom:4,textAlign:"center",lineHeight:1.2}}>N & K On Time</div>
       <div style=${{color:"#555",fontSize:13,fontWeight:600,textAlign:"center"}}>Mobile Tires · Lauderhill, FL</div>
     </div>
     <div style=${{paddingBottom:"calc(32px + env(safe-area-inset-bottom))"}}>
@@ -1532,7 +1533,7 @@ function Header({syncStatus,onSignOut}) {
   return html`<div class="header-compact">
     <div style=${{display:"flex",alignItems:"center",gap:10}}>
       <img src=${LOGO_SRC} alt="NK" style=${{width:32,height:32,objectFit:"contain",borderRadius:9,flexShrink:0,boxShadow:"0 2px 10px rgba(0,0,0,.5), 0 0 0 1px rgba(79,142,247,.15)"}} onError=${e=>e.target.style.display="none"}/>
-      <div><h1>N &amp; K On Time</h1><p>Mobile Tires · Lauderhill, FL</p></div>
+      <div><h1>N & K On Time</h1><p>Mobile Tires · Lauderhill, FL</p></div>
     </div>
     <div style=${{display:"flex",alignItems:"center",gap:10}}>
       <span class=${isSyncing?"syncing":""} style=${{fontSize:9,fontWeight:800,letterSpacing:"1px",textTransform:"uppercase",color:isLive?"var(--green)":"var(--t3)",textShadow:isLive?"0 0 8px rgba(34,197,94,.4)":"none"}}>
@@ -2248,7 +2249,7 @@ function Settings({settings,setSettings,jobs,inventory,toast}) {
       </div>
     </div>
 
-    <div class="section-label">Owners &amp; Splits</div>
+    <div class="section-label">Owners & Splits</div>
     <div class="card card-pad stack">
       <div style=${{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
         <div><label style=${lbl}>Owner 1 name</label><input type="text" value=${settings.owner1Name||""} onChange=${e=>update("owner1Name",e.target.value)} style=${inp}/></div>
@@ -2292,7 +2293,7 @@ function Settings({settings,setSettings,jobs,inventory,toast}) {
     </div>
 
     <div style=${{textAlign:"center",fontSize:11,color:"var(--t3)",padding:"20px 0",fontFamily:'"IBM Plex Mono",monospace'}}>
-      N &amp; K On Time v10 · Firebase Sync
+      N & K On Time v10 · Firebase Sync
     </div>
   </div></div>`;
 }
@@ -2461,7 +2462,7 @@ function App() {
   if(loading){
     return html`<div style=${{height:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"#0a0a0f"}}>
       <img src=${LOGO_SRC} alt="NK" onError=${e=>e.target.style.display="none"} class="logo-pulse" style=${{width:80,height:80,objectFit:"contain",borderRadius:18,marginBottom:16,boxShadow:"0 4px 20px rgba(0,0,0,.6)"}}/>
-      <div class="shimmer-text" style=${{fontSize:20,fontWeight:700}}>N &amp; K On Time</div>
+      <div class="shimmer-text" style=${{fontSize:20,fontWeight:700}}>N & K On Time</div>
       <div style=${{color:"#555",fontSize:12,marginTop:6}}>Loading…</div>
     </div>`;
   }
