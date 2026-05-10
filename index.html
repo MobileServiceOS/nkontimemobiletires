@@ -1202,15 +1202,27 @@ const SVC_PHRASES = {
   "Jump Start":"jump start service",
 };
 function buildReviewMsg(url,customerName,service,city) {
-  const name=(customerName||"").trim(), greet=name?"Hi "+name+",":"Hi,";
-  const svc=SVC_PHRASES[service]||(service?service.toLowerCase():"mobile tire service");
-  const cityStr=(city||"").trim()||"your area";
-  return greet+" thanks again for choosing N & K On Time Mobile Tires. If you have a minute, please leave a review here:\n\n"+url+"\n\nPlease mention the "+svc+" we did and that we helped you in "+cityStr+".";
+  // SEO-optimized review request: leads with service + city to encourage the
+  // customer to mention both in their Google review.
+  // - Service falls back to "mobile tire service" if missing
+  // - Location falls back to "South Florida" if missing
+  // - Google review link from Settings is appended on its own line
+  const svc=SVC_PHRASES[service]||(service?String(service).toLowerCase():"mobile tire service");
+  const cityStr=(city||"").trim()||"South Florida";
+  const link=(url||"").trim();
+  let msg="Thank you for choosing N & K On Time Mobile Tires for your "+svc+" in "+cityStr+". "
+    +"If you have a moment, please leave us a quick review and mention the service and city if possible. "
+    +"It really helps our local business.";
+  if (link) msg += "\n\n" + link;
+  return msg;
 }
 function openReviewSMS(phone,url,customerName,service,city) {
   if (!url) { alert("Set your Google Review URL in Settings first."); return; }
   const msg = encodeURIComponent(buildReviewMsg(url,customerName,service,city));
-  window.open((phone?"sms:"+phone:"sms:")+"?body="+msg);
+  // Don't crash if phone is missing — opens the SMS app with a blank "to" field
+  // so the user can pick the contact themselves.
+  const safePhone = phone ? String(phone).replace(/[^\d+]/g,"") : "";
+  window.open((safePhone?"sms:"+safePhone:"sms:")+"?body=" + msg);
 }
 
 function generateInvoicePDF(job,settings) {
@@ -1440,6 +1452,50 @@ function ProgressRing({size,stroke,pct,color,children}) {
     </svg>
     <div class="progress-ring-label">${children}</div>
   </div>`;
+}
+
+// ── MoneyInput ──────────────────────────────────────────────────────────────
+// Controlled numeric input that holds a *local string* during editing so:
+//  - user input is never reverted to a default while typing
+//  - clearing the field is allowed (won't auto-fill)
+//  - decimals work
+//  - typing "0" doesn't trigger || fallback to defaults
+//  - external value updates (e.g. settings sync from Firebase) DO sync back
+//    when the input is not focused
+// Commit is debounced via onBlur AND on each valid keystroke (so settings
+// persist immediately without needing to blur).
+function MoneyInput({value,onCommit,style,placeholder,disabled,fontSize}) {
+  const fmt = v => (v==null||v==="")?"":String(v);
+  const [local,setLocal]=useState(()=>fmt(value));
+  const [focused,setFocused]=useState(false);
+  // Sync external value into local state ONLY when not focused, so we don't
+  // clobber the user's in-progress edit.
+  useEffect(()=>{ if(!focused) setLocal(fmt(value)); },[value,focused]);
+  const commit = (raw) => {
+    const trimmed = String(raw||"").trim();
+    if (trimmed === "") { onCommit(""); return; }
+    const n = Number(trimmed);
+    if (Number.isFinite(n)) onCommit(n);
+  };
+  return html`<input
+    type="text" inputMode="decimal" pattern="[0-9.]*"
+    value=${local}
+    placeholder=${placeholder||"0"}
+    disabled=${disabled||false}
+    onFocus=${()=>setFocused(true)}
+    onBlur=${e=>{ setFocused(false); commit(e.target.value); }}
+    onChange=${e=>{
+      const raw=e.target.value;
+      // Allow only digits + a single decimal point. Empty string allowed.
+      if (raw==="" || /^[0-9]*\.?[0-9]*$/.test(raw)) {
+        setLocal(raw);
+        // Commit live so settings sync; if intermediate (e.g. "1.") we still
+        // pass the partial value but coerce only finite numbers.
+        if (raw==="" || /^[0-9]+\.?[0-9]*$/.test(raw)) commit(raw);
+      }
+    }}
+    style=${style}
+  />`;
 }
 
 // ── CityInput (CITY_LIST expanded for Broward + Palm Beach service area) ─────
@@ -2353,12 +2409,24 @@ function Settings({settings,setSettings,jobs,inventory,toast}) {
     <div class="section-label">Pricing</div>
     <div class="card card-pad stack">
       <div style=${{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-        <div><label style=${lbl}>Cost per mile ($)</label><input type="number" inputMode="decimal" step="0.01" value=${settings.costPerMile||0.65} onChange=${e=>update("costPerMile",Number(e.target.value))} style=${inp}/></div>
-        <div><label style=${lbl}>Skip threshold ($)</label><input type="number" inputMode="decimal" value=${settings.skipThreshold||70} onChange=${e=>update("skipThreshold",Number(e.target.value))} style=${inp}/></div>
+        <div><label style=${lbl}>Cost per mile ($)</label>
+          <${MoneyInput} value=${settings.costPerMile!=null?settings.costPerMile:0.65}
+            onCommit=${v=>update("costPerMile",v===""?0.65:v)} style=${inp}/>
+        </div>
+        <div><label style=${lbl}>Skip threshold ($)</label>
+          <${MoneyInput} value=${settings.skipThreshold!=null?settings.skipThreshold:70}
+            onCommit=${v=>update("skipThreshold",v===""?70:v)} style=${inp}/>
+        </div>
       </div>
       <div style=${{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-        <div><label style=${lbl}>Default target profit ($)</label><input type="number" inputMode="decimal" value=${settings.defaultTargetProfit||100} onChange=${e=>update("defaultTargetProfit",Number(e.target.value))} style=${inp}/></div>
-        <div><label style=${lbl}>Weekly goal ($)</label><input type="number" inputMode="decimal" value=${settings.weeklyGoal||1200} onChange=${e=>update("weeklyGoal",Number(e.target.value))} style=${inp}/></div>
+        <div><label style=${lbl}>Default target profit ($)</label>
+          <${MoneyInput} value=${settings.defaultTargetProfit!=null?settings.defaultTargetProfit:100}
+            onCommit=${v=>update("defaultTargetProfit",v===""?100:v)} style=${inp}/>
+        </div>
+        <div><label style=${lbl}>Weekly goal ($)</label>
+          <${MoneyInput} value=${settings.weeklyGoal!=null?settings.weeklyGoal:1200}
+            onCommit=${v=>update("weeklyGoal",v===""?1200:v)} style=${inp}/>
+        </div>
       </div>
     </div>
 
@@ -2378,10 +2446,14 @@ function Settings({settings,setSettings,jobs,inventory,toast}) {
           </div>
           <div style=${{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
             <div><label style=${{...lbl,fontSize:10}}>Base price ($)</label>
-              <input type="number" inputMode="decimal" value=${rule.basePrice||0} onChange=${e=>updRule("basePrice",Number(e.target.value))} style=${{...inp,padding:"8px 10px",fontSize:14}}/>
+              <${MoneyInput} value=${rule.basePrice!=null?rule.basePrice:0}
+                onCommit=${v=>updRule("basePrice",v===""?0:v)}
+                style=${{...inp,padding:"8px 10px",fontSize:14}}/>
             </div>
             <div><label style=${{...lbl,fontSize:10}}>Min profit ($)</label>
-              <input type="number" inputMode="decimal" value=${rule.minProfit||0} onChange=${e=>updRule("minProfit",Number(e.target.value))} style=${{...inp,padding:"8px 10px",fontSize:14}}/>
+              <${MoneyInput} value=${rule.minProfit!=null?rule.minProfit:0}
+                onCommit=${v=>updRule("minProfit",v===""?0:v)}
+                style=${{...inp,padding:"8px 10px",fontSize:14}}/>
             </div>
           </div>
         </div>`;
@@ -2394,13 +2466,19 @@ function Settings({settings,setSettings,jobs,inventory,toast}) {
       <div style=${{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}}>
         ${[1,2,3,4].map(q=>{
           const tier=settings.replacementTier||DEFAULT_REPLACEMENT_TIER;
+          const cur=tier[q]!=null?tier[q]:DEFAULT_REPLACEMENT_TIER[q];
           return html`<div key=${"r"+q}><label style=${{...lbl,fontSize:10}}>${q} tire${q>1?"s":""} ($)</label>
-            <input type="number" inputMode="decimal" value=${tier[q]||DEFAULT_REPLACEMENT_TIER[q]} onChange=${e=>update("replacementTier",{...tier,[q]:Number(e.target.value)})} style=${{...inp,padding:"8px 10px",fontSize:14}}/>
+            <${MoneyInput} value=${cur}
+              onCommit=${v=>update("replacementTier",{...(settings.replacementTier||DEFAULT_REPLACEMENT_TIER),[q]:v===""?DEFAULT_REPLACEMENT_TIER[q]:v})}
+              style=${{...inp,padding:"8px 10px",fontSize:14}}/>
           </div>`;
         })}
       </div>
       <div><label style=${{...lbl,fontSize:10}}>5+ tires: $4-tire price + this per extra tire ($)</label>
-        <input type="number" inputMode="decimal" value=${(settings.replacementTier||DEFAULT_REPLACEMENT_TIER).extra||100} onChange=${e=>update("replacementTier",{...(settings.replacementTier||DEFAULT_REPLACEMENT_TIER),extra:Number(e.target.value)})} style=${{...inp,padding:"8px 10px",fontSize:14}}/>
+        <${MoneyInput}
+          value=${(settings.replacementTier||DEFAULT_REPLACEMENT_TIER).extra!=null?(settings.replacementTier||DEFAULT_REPLACEMENT_TIER).extra:DEFAULT_REPLACEMENT_TIER.extra}
+          onCommit=${v=>update("replacementTier",{...(settings.replacementTier||DEFAULT_REPLACEMENT_TIER),extra:v===""?DEFAULT_REPLACEMENT_TIER.extra:v})}
+          style=${{...inp,padding:"8px 10px",fontSize:14}}/>
       </div>
     </div>
 
@@ -2410,13 +2488,19 @@ function Settings({settings,setSettings,jobs,inventory,toast}) {
       <div style=${{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}}>
         ${[1,2,3,4].map(q=>{
           const tier=settings.installFlatTier||DEFAULT_INSTALL_FLAT_TIER;
+          const cur=tier[q]!=null?tier[q]:DEFAULT_INSTALL_FLAT_TIER[q];
           return html`<div key=${"i"+q}><label style=${{...lbl,fontSize:10}}>${q} tire${q>1?"s":""} ($)</label>
-            <input type="number" inputMode="decimal" value=${tier[q]||DEFAULT_INSTALL_FLAT_TIER[q]} onChange=${e=>update("installFlatTier",{...tier,[q]:Number(e.target.value)})} style=${{...inp,padding:"8px 10px",fontSize:14}}/>
+            <${MoneyInput} value=${cur}
+              onCommit=${v=>update("installFlatTier",{...(settings.installFlatTier||DEFAULT_INSTALL_FLAT_TIER),[q]:v===""?DEFAULT_INSTALL_FLAT_TIER[q]:v})}
+              style=${{...inp,padding:"8px 10px",fontSize:14}}/>
           </div>`;
         })}
       </div>
       <div><label style=${{...lbl,fontSize:10}}>5+ tires: $4-tire price + this per extra tire ($)</label>
-        <input type="number" inputMode="decimal" value=${(settings.installFlatTier||DEFAULT_INSTALL_FLAT_TIER).extra||30} onChange=${e=>update("installFlatTier",{...(settings.installFlatTier||DEFAULT_INSTALL_FLAT_TIER),extra:Number(e.target.value)})} style=${{...inp,padding:"8px 10px",fontSize:14}}/>
+        <${MoneyInput}
+          value=${(settings.installFlatTier||DEFAULT_INSTALL_FLAT_TIER).extra!=null?(settings.installFlatTier||DEFAULT_INSTALL_FLAT_TIER).extra:DEFAULT_INSTALL_FLAT_TIER.extra}
+          onCommit=${v=>update("installFlatTier",{...(settings.installFlatTier||DEFAULT_INSTALL_FLAT_TIER),extra:v===""?DEFAULT_INSTALL_FLAT_TIER.extra:v})}
+          style=${{...inp,padding:"8px 10px",fontSize:14}}/>
       </div>
     </div>
 
@@ -2425,9 +2509,12 @@ function Settings({settings,setSettings,jobs,inventory,toast}) {
       <div style=${{fontSize:12,color:"var(--t3)",lineHeight:1.5}}>Extra profit added on top of the base/tier price for larger vehicles.</div>
       ${VEHICLE_TYPES.map(v=>{
         const vp=(settings.vehiclePricing&&settings.vehiclePricing[v])||DEFAULT_VEHICLE_PRICING[v]||{addOnProfit:0};
+        const cur=vp.addOnProfit!=null?vp.addOnProfit:0;
         return html`<div key=${v} style=${{display:"grid",gridTemplateColumns:"1fr 110px",gap:8,alignItems:"center",padding:"6px 0",borderBottom:"1px solid var(--border)"}}>
           <div style=${{fontWeight:600,color:"var(--t1)",fontSize:14}}>${v}</div>
-          <input type="number" inputMode="decimal" value=${vp.addOnProfit||0} onChange=${e=>update("vehiclePricing",{...(settings.vehiclePricing||DEFAULT_VEHICLE_PRICING),[v]:{...vp,addOnProfit:Number(e.target.value)}})} style=${{...inp,padding:"8px 10px",fontSize:14,textAlign:"right",fontFamily:'"IBM Plex Mono",monospace'}}/>
+          <${MoneyInput} value=${cur}
+            onCommit=${nv=>update("vehiclePricing",{...(settings.vehiclePricing||DEFAULT_VEHICLE_PRICING),[v]:{...vp,addOnProfit:nv===""?0:nv}})}
+            style=${{...inp,padding:"8px 10px",fontSize:14,textAlign:"right",fontFamily:'"IBM Plex Mono",monospace'}}/>
         </div>`;
       })}
     </div>
@@ -2438,7 +2525,7 @@ function Settings({settings,setSettings,jobs,inventory,toast}) {
       ${(settings.expenses||[]).map(e=>html`<div key=${e.id} style=${{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid var(--border)"}}>
         <input type="checkbox" checked=${e.active!==false} onChange=${ev=>update("expenses",(settings.expenses||[]).map(x=>x.id===e.id?{...x,active:ev.target.checked}:x))}/>
         <input type="text" value=${e.name} onChange=${ev=>update("expenses",(settings.expenses||[]).map(x=>x.id===e.id?{...x,name:ev.target.value}:x))} style=${{...inp,padding:"6px 8px",flex:1}}/>
-        <input type="number" value=${e.amount} onChange=${ev=>update("expenses",(settings.expenses||[]).map(x=>x.id===e.id?{...x,amount:Number(ev.target.value)}:x))} style=${{...inp,padding:"6px 8px",width:90,textAlign:"right",fontFamily:'"IBM Plex Mono",monospace'}}/>
+        <${MoneyInput} value=${e.amount} onCommit=${v=>update("expenses",(settings.expenses||[]).map(x=>x.id===e.id?{...x,amount:v===""?0:v}:x))} style=${{...inp,padding:"6px 8px",width:90,textAlign:"right",fontFamily:'"IBM Plex Mono",monospace'}}/>
       </div>`)}
       <button class="btn sm" onClick=${()=>update("expenses",[...(settings.expenses||[]),{id:uid(),name:"New expense",amount:0,active:true}])}>+ Add fixed expense</button>
     </div>
