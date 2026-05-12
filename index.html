@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -874,6 +874,7 @@ const DEFAULT_REPLACEMENT_TIER = {1:120, 2:220, 3:320, 4:400, extra:100};
 const DEFAULT_INSTALL_FLAT_TIER = {1:90, 2:140, 3:190, 4:220, extra:30};
 const DEFAULT_SETTINGS = {
   businessName:"N & K On Time Mobile Tires LLC", ownerName:"Owner",
+  userRole:"owner", // 'owner' (full access) or 'tech' (no pricing-rule editing)
   weeklyGoal:1200, taxRate:25, repairTarget:90, replacementTarget:110,
   skipThreshold:70, riskyMiles:25, costPerMile:0.65,
   defaultTargetProfit:100,
@@ -1165,6 +1166,113 @@ function sanitizeJob(j) {
     inventoryUsed: inventoryUsed,
   };
 }
+// ── Inventory bulk-upload helpers ───────────────────────────────────────────
+// Dedupe key: size + brand + condition + location (case-insensitive, normalized).
+// Items sharing this key are merged: qty increases instead of creating duplicates.
+function invDedupeKey(item) {
+  return [
+    normalizeTireSize(item.size||"") || (item.size||"").toLowerCase().trim(),
+    String(item.brand||"").toLowerCase().trim(),
+    String(item.condition||"New").toLowerCase().trim(),
+    String(item.location||"").toLowerCase().trim(),
+  ].join("|");
+}
+
+// Parse CSV-style bulk-upload text. Accepts:
+//   tireSize, brand, condition, quantity, cost, sellingPrice, location, notes
+// Returns {rows, errors} where rows is an array of {ok, item, errorMsg, raw}.
+function parseBulkInventoryCSV(text) {
+  const rows = [];
+  const errors = [];
+  if (!text || typeof text !== "string") return {rows, errors:["Empty input."]};
+  // Split lines, drop blank lines and lines starting with # (comments).
+  const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l && !l.startsWith("#"));
+  if (lines.length === 0) return {rows, errors:["No rows found."]};
+  // Detect and skip a header row (case-insensitive match on "tireSize"/"size").
+  const first = lines[0].toLowerCase();
+  let startIdx = 0;
+  if (first.includes("tiresize") || first.startsWith("size,") || first.startsWith("tire size")) {
+    startIdx = 1;
+  }
+  for (let i = startIdx; i < lines.length; i++) {
+    const raw = lines[i];
+    // Split by comma, respecting quoted strings with commas inside.
+    const cells = [];
+    let buf = "", inQ = false;
+    for (let c = 0; c < raw.length; c++) {
+      const ch = raw[c];
+      if (ch === '"') { inQ = !inQ; continue; }
+      if (ch === "," && !inQ) { cells.push(buf.trim()); buf = ""; continue; }
+      buf += ch;
+    }
+    cells.push(buf.trim());
+    const [tireSize="", brand="", condition="", quantity="", cost="", sellingPrice="", location="", notes=""] = cells;
+    const rowNum = i + 1;
+    const problems = [];
+    if (!tireSize) problems.push("missing tire size");
+    const qtyN = Number(quantity);
+    if (!quantity || !Number.isFinite(qtyN) || qtyN < 1) problems.push("missing/invalid quantity");
+    const costN = Number(cost);
+    if (cost && (!Number.isFinite(costN) || costN < 0)) problems.push("invalid cost");
+    const sellN = Number(sellingPrice);
+    if (sellingPrice && (!Number.isFinite(sellN) || sellN < 0)) problems.push("invalid selling price");
+    const condNorm = /used/i.test(condition) ? "Used" : (condition ? "New" : "New");
+    const item = {
+      size: tireSize,
+      brand,
+      condition: condNorm,
+      qty: Number.isFinite(qtyN) && qtyN >= 1 ? Math.floor(qtyN) : 1,
+      cost: Number.isFinite(costN) ? costN : 0,
+      sellPrice: Number.isFinite(sellN) ? sellN : 0,
+      location,
+      notes,
+    };
+    rows.push({
+      ok: problems.length === 0,
+      errorMsg: problems.join(", "),
+      item,
+      raw,
+      rowNum,
+    });
+    if (problems.length) errors.push(`Row ${rowNum}: ${problems.join(", ")}`);
+  }
+  return {rows, errors};
+}
+
+// Merge parsed rows into existing inventory, deduping by (size+brand+condition+location).
+// Returns {nextInventory, added, merged}.
+function mergeBulkInventory(existing, parsedRows) {
+  const arr = Array.isArray(existing) ? existing.slice() : [];
+  // Build a key->index map for fast dedupe lookup.
+  const keyIdx = new Map();
+  arr.forEach((it, idx) => { keyIdx.set(invDedupeKey(it), idx); });
+  let added = 0, merged = 0;
+  for (const r of parsedRows) {
+    if (!r.ok) continue;
+    const k = invDedupeKey(r.item);
+    if (keyIdx.has(k)) {
+      const idx = keyIdx.get(k);
+      const cur = arr[idx];
+      arr[idx] = {
+        ...cur,
+        qty: Number(cur.qty||0) + Number(r.item.qty||0),
+        // Update cost/sellPrice/notes/location only if the new row supplies them.
+        cost: r.item.cost > 0 ? r.item.cost : Number(cur.cost||0),
+        sellPrice: r.item.sellPrice > 0 ? r.item.sellPrice : Number(cur.sellPrice||0),
+        notes: r.item.notes || cur.notes || "",
+        location: r.item.location || cur.location || "",
+      };
+      merged++;
+    } else {
+      const newItem = sanitizeInvItem({id:uid(), ...r.item});
+      arr.push(newItem);
+      keyIdx.set(k, arr.length - 1);
+      added++;
+    }
+  }
+  return {nextInventory: arr, added, merged};
+}
+
 function sanitizeInvItem(i) {
   if (i === null || i === undefined || typeof i !== "object") i = {};
   const rawCond = String(i.condition || "").toLowerCase();
@@ -1179,6 +1287,7 @@ function sanitizeInvItem(i) {
     cost:Number(i.cost||0),
     sellPrice:Number(i.sellPrice||i.price||0),
     notes:String(i.notes||""),
+    location:String(i.location||""),
     treadDepth:String(i.treadDepth||""),
     dotCode:String(i.dotCode||""),
     createdAt:Number(i.createdAt||Date.now()),
@@ -2032,7 +2141,12 @@ function AddJob({form,setForm,onSave,settings,recentSizes,inventory,toast}) {
   return html`<div class="screen"><div class="page page-enter">
     <div class="section-label">Log a Job</div>
 
-    <div class="card card-pad stack">
+    <!-- 1. QUICK PRICING (top — visible without scrolling) -->
+    <${QuickQuote} form=${form} settings=${settings} priceMode=${priceMode} setPriceMode=${setPriceMode}
+      onApply=${v=>change("revenue",v)} onFormChange=${change}/>
+
+    <!-- 2. SERVICE TYPE -->
+    <div class="card card-pad stack" style=${{marginTop:12}}>
       <div><label style=${lbl}>Service</label>
         <select value=${form.service||""} onChange=${e=>change("service",e.target.value)} style=${inp}>
           ${SERVICE_OPTIONS.map(s=>html`<option key=${s} value=${s}>${s}</option>`)}
@@ -2049,36 +2163,9 @@ function AddJob({form,setForm,onSave,settings,recentSizes,inventory,toast}) {
           <input type="time" value=${form.startTime||""} onChange=${e=>change("startTime",e.target.value)} style=${inp}/>
         </div>
       </div>
-      <div><label style=${lbl}>Status</label>
-        <select value=${form.status||"Completed"} onChange=${e=>change("status",e.target.value)} style=${inp}>
-          ${STATUS_OPTIONS.map(st=>html`<option key=${st} value=${st}>${st}</option>`)}
-        </select>
-      </div>
-      <div><label style=${lbl}>Service area</label>
-        <${CityInput} value=${form.area||""} onChange=${v=>change("area",v)}/>
-      </div>
     </div>
 
-    ${isTireMaterialService(form.service)&&html`<div class="card card-pad stack">
-      <div><label style=${lbl}>Tire size</label>
-        <input type="text" placeholder="e.g. 225/65R17" value=${form.tireSize||""} onChange=${e=>change("tireSize",e.target.value)} style=${inp}/>
-        ${recentSizes&&recentSizes.length>0&&html`<div class="chip-row" style=${{marginTop:8}}>
-          ${recentSizes.slice(0,8).map(s=>html`<button key=${s} type="button" class=${"chip sm"+(form.tireSize===s?" active":"")} onClick=${()=>change("tireSize",s)}>${s}</button>`)}
-        </div>`}
-      </div>
-      <div><label style=${lbl}>Tire source</label>
-        <div class="chip-row">
-          ${["Inventory","Bought for this job","Customer supplied"].map(t=>html`<button key=${t} type="button" class=${"chip"+(form.tireSource===t?" active":"")} onClick=${()=>change("tireSource",t)}>${t}</button>`)}
-        </div>
-      </div>
-      ${form.tireSource==="Customer supplied"&&isCustomerSuppliedInstall(form)&&(()=>{
-        const t=settings.installFlatTier||DEFAULT_INSTALL_FLAT_TIER;
-        return html`<div style=${{padding:"10px 12px",background:"rgba(251,146,60,.08)",border:"1px solid rgba(251,146,60,.3)",borderRadius:8,fontSize:12,color:"var(--t2)"}}>
-          ⚠ Customer-supplied install: flat-rate pricing (1 tire ${money(t[1])}, 2 = ${money(t[2])}, 3 = ${money(t[3])}, 4 = ${money(t[4])}).
-        </div>`;
-      })()}
-    </div>`}
-
+    <!-- 3. CUSTOMER INFO -->
     <div class="card card-pad stack">
       <div><label style=${lbl}>Customer name (optional)</label>
         <input type="text" value=${form.customerName||""} onChange=${e=>change("customerName",e.target.value)} style=${inp}/>
@@ -2091,7 +2178,51 @@ function AddJob({form,setForm,onSave,settings,recentSizes,inventory,toast}) {
           ${SOURCE_QUICK.map(s=>html`<button key=${s.label} type="button" class=${"chip"+(form.source===s.label?" active":"")} onClick=${()=>change("source",s.label)}>${s.icon} ${s.label}</button>`)}
         </div>
       </div>
-      <div><label style=${lbl}>Payment</label>
+    </div>
+
+    <!-- 4. LOCATION / CITY -->
+    <div class="card card-pad stack">
+      <div><label style=${lbl}>Service area</label>
+        <${CityInput} value=${form.area||""} onChange=${v=>change("area",v)}/>
+      </div>
+    </div>
+
+    <!-- 5 + 6. TIRE SIZE & INVENTORY SOURCE (only for tire-material services) -->
+    ${isTireMaterialService(form.service)&&html`<div class="card card-pad stack">
+      <div><label style=${lbl}>Tire size</label>
+        <input type="text" placeholder="e.g. 225/65R17" value=${form.tireSize||""} onChange=${e=>change("tireSize",e.target.value)} style=${inp}/>
+        ${recentSizes&&recentSizes.length>0&&html`<div class="chip-row" style=${{marginTop:8}}>
+          ${recentSizes.slice(0,8).map(s=>html`<button key=${s} type="button" class=${"chip sm"+(form.tireSize===s?" active":"")} onClick=${()=>change("tireSize",s)}>${s}</button>`)}
+        </div>`}
+      </div>
+      <div><label style=${lbl}>Tire source</label>
+        <div class="chip-row">
+          ${["Inventory","Bought for this job","Customer supplied"].map(t=>html`<button key=${t} type="button" class=${"chip"+(form.tireSource===t?" active":"")} onClick=${()=>change("tireSource",t)}>${t}</button>`)}
+        </div>
+        ${form.tireSource==="Inventory"&&form.tireSize&&(()=>{
+          const norm=normalizeTireSize(form.tireSize);
+          const matches=Array.isArray(inventory)?inventory.filter(i=>normalizeTireSize(i.size)===norm&&Number(i.qty||0)>0):[];
+          const totalAvail=matches.reduce((t,i)=>t+Number(i.qty||0),0);
+          if(matches.length===0) return html`<div style=${{padding:"8px 12px",background:"rgba(239,68,68,.08)",border:"1px solid rgba(239,68,68,.3)",borderRadius:8,fontSize:12,color:"var(--t2)",marginTop:8}}>⚠ Out of stock for ${form.tireSize}. Will use outside-sourced.</div>`;
+          return html`<div style=${{padding:"8px 12px",background:"rgba(34,197,94,.08)",border:"1px solid rgba(34,197,94,.3)",borderRadius:8,fontSize:12,color:"var(--t2)",marginTop:8}}>✓ ${totalAvail} in stock${matches[0].brand?" · "+matches[0].brand:""}${matches[0].cost?" · $"+matches[0].cost+" each":""}</div>`;
+        })()}
+      </div>
+      ${form.tireSource==="Customer supplied"&&isCustomerSuppliedInstall(form)&&(()=>{
+        const t=settings.installFlatTier||DEFAULT_INSTALL_FLAT_TIER;
+        return html`<div style=${{padding:"10px 12px",background:"rgba(251,146,60,.08)",border:"1px solid rgba(251,146,60,.3)",borderRadius:8,fontSize:12,color:"var(--t2)"}}>
+          ⚠ Customer-supplied install: flat-rate pricing (1 tire ${money(t[1])}, 2 = ${money(t[2])}, 3 = ${money(t[3])}, 4 = ${money(t[4])}).
+        </div>`;
+      })()}
+    </div>`}
+
+    <!-- 7. PAYMENT STATUS -->
+    <div class="card card-pad stack">
+      <div><label style=${lbl}>Status</label>
+        <select value=${form.status||"Completed"} onChange=${e=>change("status",e.target.value)} style=${inp}>
+          ${STATUS_OPTIONS.map(st=>html`<option key=${st} value=${st}>${st}</option>`)}
+        </select>
+      </div>
+      <div><label style=${lbl}>Payment method</label>
         <div class="chip-row">
           ${PAYMENT_OPTIONS.map(p=>html`<button key=${p.label} type="button" class=${"chip"+(form.payment===p.label?" active":"")} onClick=${()=>change("payment",p.label)}>${p.icon} ${p.label}</button>`)}
         </div>
@@ -2101,14 +2232,14 @@ function AddJob({form,setForm,onSave,settings,recentSizes,inventory,toast}) {
           ${FLAGS.map(([k,label])=>html`<button key=${k} type="button" class=${"chip"+(form[k]?" active":"")} onClick=${()=>change(k,!form[k])}>${label}</button>`)}
         </div>
       </div>
+    </div>
+
+    <!-- 8. NOTES -->
+    <div class="card card-pad stack">
       <div><label style=${lbl}>Note (prefix with [c] to show on invoice)</label>
         <textarea rows="2" value=${form.note||""} onChange=${e=>change("note",e.target.value)} style=${{...inp,resize:"vertical",minHeight:60}}/>
       </div>
     </div>
-
-    <div class="section-label">Pricing</div>
-    <${QuickQuote} form=${form} settings=${settings} priceMode=${priceMode} setPriceMode=${setPriceMode}
-      onApply=${v=>change("revenue",v)} onFormChange=${change}/>
 
     <button class="btn primary press-scale" style=${{marginTop:8,width:"100%",fontSize:16,padding:"16px"}} onClick=${handleSave}>
       Save Job · ${money(priceMode==="custom"?Number(form.revenue||0):priceMode==="premium"?calc.premiumPrice:calc.suggestedPrice)}
@@ -2132,6 +2263,7 @@ function HistoryJobRow({job,settings,onEdit,onDelete,onInvoice,onReview}) {
           ${isStatusUncollected(job.status)&&html`<span class="pill gold">${job.status==="Pending"?"Pending":job.status}</span>`}
           ${isStatusCancelled(job.status)&&html`<span class="pill red">Cancelled</span>`}
           ${job.payment&&html`<span class="pill gray">${job.payment}</span>`}
+          ${job.tireSource&&isTireMaterialService(job.service)&&html`<span class="pill gray">${job.tireSource==="Inventory"?(Array.isArray(job.inventoryDeductions)&&job.inventoryDeductions.length>0?"📦 From Inventory":"📦 Inventory"):job.tireSource==="Customer supplied"?"🚗 Customer":"🛒 Outside"}</span>`}
         </div>
       </div>
       <div class="job-right">
@@ -2261,53 +2393,147 @@ function Payouts({jobs,expenses,settings}) {
 }
 
 // ── Inventory ───────────────────────────────────────────────────────────────
+// ── BulkUploadModal — CSV-paste import for inventory ───────────────────────
+function BulkUploadModal({open,onClose,inventory,setInventory,toast}) {
+  const [text,setText]=useState("");
+  const [parsed,setParsed]=useState(null);
+  if (!open) return "";
+  const example = "275/55R20, Michelin, Used, 2, 65, 140, Van, Good tread\n225/60R17, Goodyear, New, 4, 95, 170, Storage, New set";
+  const doParse = () => {
+    const result = parseBulkInventoryCSV(text);
+    setParsed(result);
+    if (result.rows.length === 0) {
+      toast && toast("No rows found", "err");
+    }
+  };
+  const doImport = () => {
+    if (!parsed) return;
+    const validRows = parsed.rows.filter(r=>r.ok);
+    if (validRows.length === 0) { toast&&toast("No valid rows to import","err"); return; }
+    const {nextInventory, added, merged} = mergeBulkInventory(inventory, validRows);
+    setInventory(nextInventory);
+    haptic(15);
+    toast && toast(`Imported: ${added} added, ${merged} merged`, "ok");
+    setText(""); setParsed(null); onClose();
+  };
+  const overlay={position:"fixed",inset:0,background:"rgba(0,0,0,.7)",zIndex:9998,display:"flex",alignItems:"flex-end",justifyContent:"center",padding:"0"};
+  const panel={width:"100%",maxWidth:560,maxHeight:"90vh",background:"var(--s1)",borderRadius:"16px 16px 0 0",border:"1px solid var(--border)",display:"flex",flexDirection:"column",animation:"fadeSlideUp .25s ease",paddingBottom:"env(safe-area-inset-bottom)"};
+  const head={padding:"14px 18px",borderBottom:"1px solid var(--border)",display:"flex",justifyContent:"space-between",alignItems:"center"};
+  const body={padding:"14px 18px",overflowY:"auto",flex:1,WebkitOverflowScrolling:"touch"};
+  const lbl={fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:".5px",color:"var(--t2)",marginBottom:6,display:"block"};
+
+  return html`<div style=${overlay} onClick=${onClose}>
+    <div style=${panel} onClick=${e=>e.stopPropagation()}>
+      <div style=${head}>
+        <div style=${{fontSize:16,fontWeight:800,color:"var(--t1)"}}>Bulk Upload Stock</div>
+        <button class="btn sm" onClick=${onClose}>✕</button>
+      </div>
+      <div style=${body}>
+        ${!parsed&&html`<div>
+          <div style=${{fontSize:13,color:"var(--t2)",lineHeight:1.5,marginBottom:10}}>
+            Paste one tire per line. Columns: <strong style=${{color:"var(--t1)"}}>tireSize, brand, condition, quantity, cost, sellingPrice, location, notes</strong>. Header row optional. Duplicates (same size + brand + condition + location) will be merged — quantity is added.
+          </div>
+          <div style=${{padding:"10px 12px",background:"var(--s3)",border:"1px solid var(--border2)",borderRadius:8,fontFamily:'"IBM Plex Mono",monospace',fontSize:11,color:"var(--t3)",marginBottom:10,whiteSpace:"pre-wrap"}}>${example}</div>
+          <label style=${lbl}>CSV-style rows</label>
+          <textarea value=${text} onChange=${e=>setText(e.target.value)} rows="9"
+            placeholder="275/55R20, Michelin, Used, 2, 65, 140, Van, Good tread"
+            style=${{width:"100%",border:"1px solid var(--border)",background:"var(--s3)",color:"var(--t1)",borderRadius:8,padding:"10px 12px",fontFamily:'"IBM Plex Mono",monospace',fontSize:13,resize:"vertical",minHeight:140,outline:"none"}}/>
+          <button class="btn primary" style=${{width:"100%",marginTop:10,padding:"12px"}} onClick=${doParse}>Preview Import</button>
+        </div>`}
+        ${parsed&&html`<div>
+          <div style=${{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+            <span class="pill green">${parsed.rows.filter(r=>r.ok).length} valid</span>
+            ${parsed.rows.filter(r=>!r.ok).length>0&&html`<span class="pill red">${parsed.rows.filter(r=>!r.ok).length} errors</span>`}
+          </div>
+          <div style=${{maxHeight:300,overflowY:"auto",border:"1px solid var(--border)",borderRadius:8,marginBottom:10}}>
+            ${parsed.rows.map(r=>html`<div key=${r.rowNum} style=${{padding:"10px 12px",borderBottom:"1px solid var(--border2)",fontSize:12}}>
+              <div style=${{display:"flex",justifyContent:"space-between",gap:8,alignItems:"center"}}>
+                <div style=${{fontFamily:'"IBM Plex Mono",monospace',fontSize:11,color:r.ok?"var(--t1)":"var(--red)",flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>Row ${r.rowNum}: ${r.raw}</div>
+                ${r.ok?html`<span class="pill green sm">OK</span>`:html`<span class="pill red sm">ERR</span>`}
+              </div>
+              ${r.ok&&html`<div style=${{marginTop:4,color:"var(--t3)",fontSize:11}}>
+                ${r.item.size} · ${r.item.brand||"—"} · ${r.item.condition} · qty ${r.item.qty}${r.item.cost?" · $"+r.item.cost+" each":""}${r.item.location?" · "+r.item.location:""}
+              </div>`}
+              ${!r.ok&&html`<div style=${{marginTop:4,color:"var(--red)",fontSize:11}}>${r.errorMsg}</div>`}
+            </div>`)}
+          </div>
+          <div style=${{display:"flex",gap:8}}>
+            <button class="btn" style=${{flex:1,padding:"12px"}} onClick=${()=>setParsed(null)}>← Back</button>
+            <button class="btn primary" style=${{flex:2,padding:"12px"}} onClick=${doImport} disabled=${parsed.rows.filter(r=>r.ok).length===0}>Import ${parsed.rows.filter(r=>r.ok).length} ${parsed.rows.filter(r=>r.ok).length===1?"row":"rows"}</button>
+          </div>
+        </div>`}
+      </div>
+    </div>
+  </div>`;
+}
+
 function Inventory({inventory,setInventory,toast}) {
   const [size,setSize]=useState("");
   const [brand,setBrand]=useState("");
   const [condition,setCondition]=useState("New");
   const [qty,setQty]=useState("");
   const [cost,setCost]=useState("");
+  const [location,setLocation]=useState("");
   const [filter,setFilter]=useState("");
   const [compact,setCompact]=useState(()=>load("nk_inv_compact",false));
+  const [bulkOpen,setBulkOpen]=useState(false);
 
   useEffect(()=>persist("nk_inv_compact",compact),[compact]);
 
   const totalUnits=inventory.reduce((t,i)=>t+Number(i.qty||0),0);
   const totalValue=inventory.reduce((t,i)=>t+Number(i.qty||0)*Number(i.cost||0),0);
+  const outOfStock=inventory.filter(i=>Number(i.qty||0)<=0).length;
 
   const add=()=>{
     if(!size.trim()){ toast&&toast("Tire size required","err"); return; }
     const norm=normalizeTireSize(size)||size.trim();
     setInventory(prev=>{
       const arr=Array.isArray(prev)?prev.slice():[];
-      const matchIdx=arr.findIndex(i=>normalizeTireSize(i.size)===normalizeTireSize(norm) && (i.condition||"New").toLowerCase()===condition.toLowerCase());
+      // Dedupe key matches the bulk-upload merge logic: size + brand + condition + location
+      const newKey=invDedupeKey({size:norm,brand,condition,location});
+      const matchIdx=arr.findIndex(i=>invDedupeKey(i)===newKey);
       if(matchIdx>=0){
         arr[matchIdx]={...arr[matchIdx], qty:Number(arr[matchIdx].qty||0)+Number(qty||1), cost:Number(cost||arr[matchIdx].cost||0)};
       } else {
-        arr.push(sanitizeInvItem({id:uid(),size:norm,brand,condition,qty:Number(qty||1),cost:Number(cost||0)}));
+        arr.push(sanitizeInvItem({id:uid(),size:norm,brand,condition,qty:Number(qty||1),cost:Number(cost||0),location}));
       }
       return arr;
     });
-    setSize(""); setBrand(""); setQty(""); setCost("");
+    setSize(""); setBrand(""); setQty(""); setCost(""); setLocation("");
     haptic(10); toast&&toast("Added to inventory","ok");
   };
 
   const adjustQty=(id,delta)=>{
     setInventory(prev=>(Array.isArray(prev)?prev:[]).map(i=>i.id===id?{...i,qty:Math.max(0,Number(i.qty||0)+delta)}:i));
   };
-  const del=id=>setInventory(prev=>(Array.isArray(prev)?prev:[]).filter(i=>i.id!==id));
+  // Per spec: hitting trash on a 0-qty row deletes it. On a row with qty>0, the
+  // first click marks it out-of-stock (qty=0) — a confirm step before destroying it.
+  const del=id=>{
+    const item=(Array.isArray(inventory)?inventory:[]).find(i=>i.id===id);
+    if (item && Number(item.qty||0) > 0) {
+      if (!confirm(`Mark ${item.size} as out of stock? (Sets quantity to 0 — tap trash again to remove the row.)`)) return;
+      setInventory(prev=>(Array.isArray(prev)?prev:[]).map(i=>i.id===id?{...i,qty:0}:i));
+      toast && toast("Marked out of stock", "info");
+      return;
+    }
+    if (!confirm("Remove this empty inventory row permanently?")) return;
+    setInventory(prev=>(Array.isArray(prev)?prev:[]).filter(i=>i.id!==id));
+  };
 
   const filtered=inventory.filter(i=>{
     if(!filter.trim()) return true;
     const q=filter.toLowerCase();
-    return (i.size||"").toLowerCase().includes(q)||(i.brand||"").toLowerCase().includes(q);
+    return (i.size||"").toLowerCase().includes(q)||(i.brand||"").toLowerCase().includes(q)||(i.location||"").toLowerCase().includes(q);
   }).sort((a,b)=>(a.size||"").localeCompare(b.size||""));
 
   const inp={width:"100%",border:"1px solid var(--border)",background:"var(--s3)",color:"var(--t1)",borderRadius:"var(--r3)",padding:"12px 14px",outline:"none",fontSize:15};
   const lbl={fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:".5px",color:"var(--t2)",marginBottom:6,display:"block"};
 
   return html`<div class="screen"><div class="page page-enter">
-    <div class="section-label">Inventory</div>
+    <div style=${{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+      <div class="section-label" style=${{margin:0}}>Inventory</div>
+      <button class="btn sm" onClick=${()=>setBulkOpen(true)}>📤 Bulk Upload</button>
+    </div>
 
     <div class="card card-pad stack">
       <div style=${{display:"grid",gridTemplateColumns:"2fr 1fr",gap:8}}>
@@ -2331,6 +2557,9 @@ function Inventory({inventory,setInventory,toast}) {
           <input type="number" min="0" inputMode="decimal" value=${cost} onChange=${e=>setCost(e.target.value)} placeholder="0.00" style=${inp}/>
         </div>
       </div>
+      <div><label style=${lbl}>Location (optional)</label>
+        <input type="text" value=${location} onChange=${e=>setLocation(e.target.value)} placeholder="Van, Storage, Garage…" style=${inp}/>
+      </div>
       <button class="btn primary press-scale" onClick=${add}>+ Add Tire</button>
     </div>
 
@@ -2338,25 +2567,29 @@ function Inventory({inventory,setInventory,toast}) {
       <div style=${{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
         <div>
           <div style=${{fontWeight:700,color:"var(--t1)"}}>${totalUnits} units</div>
-          <div style=${{fontSize:11,color:"var(--t3)"}}>Value: ${money(totalValue)}</div>
+          <div style=${{fontSize:11,color:"var(--t3)"}}>Value: ${money(totalValue)}${outOfStock>0?" · "+outOfStock+" out of stock":""}</div>
         </div>
         <button class="btn sm" onClick=${()=>setCompact(!compact)}>${compact?"Detail":"Compact"}</button>
       </div>
-      <input type="search" value=${filter} onChange=${e=>setFilter(e.target.value)} placeholder="Search by size or brand…" style=${inp}/>
+      <input type="search" value=${filter} onChange=${e=>setFilter(e.target.value)} placeholder="Search by size, brand or location…" style=${inp}/>
       ${filtered.length===0?html`<div style=${{color:"var(--t3)",fontSize:13,textAlign:"center",padding:"20px 0"}}>No inventory items match.</div>`:
-        filtered.map(i=>html`<div key=${i.id} style=${{display:"flex",alignItems:"center",gap:10,padding:"10px 0",borderBottom:"1px solid var(--border)"}}>
-          <div style=${{flex:1,minWidth:0}}>
-            <div style=${{fontWeight:700,color:"var(--t1)",fontFamily:'"IBM Plex Mono",monospace'}}>${i.size}${i.condition&&i.condition.toLowerCase()==="used"?html` <span style=${{fontSize:10,padding:"2px 6px",background:"var(--s3)",borderRadius:4,marginLeft:6,color:"var(--t3)"}}>USED</span>`:""}</div>
-            ${!compact&&html`<div style=${{fontSize:11,color:"var(--t3)"}}>${i.brand||""}${i.cost?" · "+money(i.cost)+" each":""}</div>`}
-          </div>
-          <div style=${{display:"flex",alignItems:"center",gap:4}}>
-            <button class="btn sm" onClick=${()=>adjustQty(i.id,-1)}>−</button>
-            <div style=${{minWidth:32,textAlign:"center",fontFamily:'"IBM Plex Mono",monospace',fontWeight:700,color:i.qty<=0?"var(--red)":"var(--t1)"}}>${i.qty}</div>
-            <button class="btn sm" onClick=${()=>adjustQty(i.id,1)}>+</button>
-            <button class="btn sm danger" onClick=${()=>del(i.id)}>🗑</button>
-          </div>
-        </div>`)}
+        filtered.map(i=>{
+          const oos = Number(i.qty||0) <= 0;
+          return html`<div key=${i.id} style=${{display:"flex",alignItems:"center",gap:10,padding:"10px 0",borderBottom:"1px solid var(--border)",opacity:oos?.55:1}}>
+            <div style=${{flex:1,minWidth:0}}>
+              <div style=${{fontWeight:700,color:"var(--t1)",fontFamily:'"IBM Plex Mono",monospace'}}>${i.size}${i.condition&&i.condition.toLowerCase()==="used"?html` <span style=${{fontSize:10,padding:"2px 6px",background:"var(--s3)",borderRadius:4,marginLeft:6,color:"var(--t3)"}}>USED</span>`:""}${oos?html` <span style=${{fontSize:10,padding:"2px 6px",background:"rgba(239,68,68,.15)",borderRadius:4,marginLeft:6,color:"var(--red)",fontWeight:700}}>OUT OF STOCK</span>`:""}</div>
+              ${!compact&&html`<div style=${{fontSize:11,color:"var(--t3)"}}>${i.brand||""}${i.cost?" · "+money(i.cost)+" each":""}${i.location?" · "+i.location:""}</div>`}
+            </div>
+            <div style=${{display:"flex",alignItems:"center",gap:4}}>
+              <button class="btn sm" onClick=${()=>adjustQty(i.id,-1)}>−</button>
+              <div style=${{minWidth:32,textAlign:"center",fontFamily:'"IBM Plex Mono",monospace',fontWeight:700,color:oos?"var(--red)":"var(--t1)"}}>${i.qty}</div>
+              <button class="btn sm" onClick=${()=>adjustQty(i.id,1)}>+</button>
+              <button class="btn sm danger" onClick=${()=>del(i.id)}>🗑</button>
+            </div>
+          </div>`;
+        })}
     </div>
+    <${BulkUploadModal} open=${bulkOpen} onClose=${()=>setBulkOpen(false)} inventory=${inventory} setInventory=${setInventory} toast=${toast}/>
   </div></div>`;
 }
 
@@ -2365,6 +2598,10 @@ function Settings({settings,setSettings,jobs,inventory,toast}) {
   const update=(k,v)=>setSettings(p=>({...p,[k]:v}));
   const inp={width:"100%",border:"1px solid var(--border)",background:"var(--s3)",color:"var(--t1)",borderRadius:"var(--r3)",padding:"12px 14px",outline:"none",fontSize:15};
   const lbl={fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:".5px",color:"var(--t2)",marginBottom:6,display:"block"};
+  // Role: 'owner' (full access) | 'tech' (no pricing-rule editing). When set to
+  // tech, all pricing-rule and tier-editing sections are hidden — the tech can
+  // still create jobs and enter final price on Add Job.
+  const isOwner = (settings.userRole||"owner") !== "tech";
 
   const exportCSV=()=>{
     const rows=[["Date","Service","Area","Customer","Phone","Vehicle","Tire Size","Qty","Revenue","Tire Cost","Misc","Miles","Payment","Status","Source"]];
@@ -2389,6 +2626,18 @@ function Settings({settings,setSettings,jobs,inventory,toast}) {
   };
 
   return html`<div class="screen"><div class="page page-enter">
+    <div class="section-label">Account</div>
+    <div class="card card-pad stack">
+      <div><label style=${lbl}>Role on this device</label>
+        <div class="chip-row">
+          ${[{k:"owner",l:"Owner / Admin"},{k:"tech",l:"Technician"}].map(r=>html`<button key=${r.k} type="button" class=${"chip"+(((settings.userRole||"owner")===r.k)?" active":"")} onClick=${()=>update("userRole",r.k)}>${r.l}</button>`)}
+        </div>
+        <div style=${{fontSize:11,color:"var(--t3)",marginTop:6,lineHeight:1.5}}>
+          ${isOwner?"Owner can edit all pricing rules, tier pricing, vehicle add-ons, and weekly expenses.":"Technician can log jobs and set a final price, but cannot edit business pricing rules."}
+        </div>
+      </div>
+    </div>
+
     <div class="section-label">Business</div>
     <div class="card card-pad stack">
       <div><label style=${lbl}>Business name</label>
@@ -2406,7 +2655,7 @@ function Settings({settings,setSettings,jobs,inventory,toast}) {
       <div style=${{fontSize:11,color:"var(--t3)"}}>100% of net profit (after direct costs and weekly fixed expenses) goes to the owner.</div>
     </div>
 
-    <div class="section-label">Pricing</div>
+    ${isOwner&&html`<div class="section-label">Pricing</div>
     <div class="card card-pad stack">
       <div style=${{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
         <div><label style=${lbl}>Cost per mile ($)</label>
@@ -2428,9 +2677,9 @@ function Settings({settings,setSettings,jobs,inventory,toast}) {
             onCommit=${v=>update("weeklyGoal",v===""?1200:v)} style=${inp}/>
         </div>
       </div>
-    </div>
+    </div>`}
 
-    <div class="section-label">Pricing rules per service</div>
+    ${isOwner&&html`<div class="section-label">Pricing rules per service</div>
     <div class="card card-pad stack">
       <div style=${{fontSize:12,color:"var(--t3)",lineHeight:1.5}}>Toggle services on/off, set base price (the suggested price floor), and minimum profit per job.</div>
       ${SERVICE_KEYS.map(svc=>{
@@ -2517,7 +2766,11 @@ function Settings({settings,setSettings,jobs,inventory,toast}) {
             style=${{...inp,padding:"8px 10px",fontSize:14,textAlign:"right",fontFamily:'"IBM Plex Mono",monospace'}}/>
         </div>`;
       })}
-    </div>
+    </div>`}
+
+    ${!isOwner&&html`<div class="card card-pad" style=${{textAlign:"center",color:"var(--t3)",fontSize:13}}>
+      🔒 Pricing rules, tier pricing, and vehicle add-ons are locked for technician accounts. Switch to Owner role above to edit.
+    </div>`}
 
     <div class="section-label">Recurring fixed expenses</div>
     <div class="card card-pad stack">
