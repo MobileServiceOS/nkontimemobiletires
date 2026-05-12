@@ -2504,12 +2504,23 @@ function Inventory({inventory,setInventory,toast}) {
   const [filter,setFilter]=useState("");
   const [compact,setCompact]=useState(()=>load("nk_inv_compact",false));
   const [bulkOpen,setBulkOpen]=useState(false);
+  const [addOpen,setAddOpen]=useState(false);
+  const [stockFilter,setStockFilter]=useState("all"); // 'all' | 'in' | 'out' | rim like 'R17'
 
   useEffect(()=>persist("nk_inv_compact",compact),[compact]);
 
   const totalUnits=inventory.reduce((t,i)=>t+Number(i.qty||0),0);
   const totalValue=inventory.reduce((t,i)=>t+Number(i.qty||0)*Number(i.cost||0),0);
   const outOfStock=inventory.filter(i=>Number(i.qty||0)<=0).length;
+  const inStockCount=inventory.length-outOfStock;
+
+  // Extract rim diameter (R15, R16…) from a size string for grouping/filtering.
+  const rimOf=(s)=>{ const m=String(s||"").match(/R(\d{2,3})$/i); return m?("R"+m[1]):""; };
+  const rimFacets=useMemo(()=>{
+    const counts={};
+    inventory.forEach(i=>{ const r=rimOf(i.size); if(r) counts[r]=(counts[r]||0)+1; });
+    return Object.entries(counts).sort((a,b)=>Number(a[0].slice(1))-Number(b[0].slice(1)));
+  },[inventory]);
 
   const add=()=>{
     if(!size.trim()){ toast&&toast("Tire size required","err"); return; }
@@ -2528,6 +2539,7 @@ function Inventory({inventory,setInventory,toast}) {
     });
     setSize(""); setBrand(""); setQty(""); setCost(""); setLocation("");
     haptic(10); toast&&toast("Added to inventory","ok");
+    setAddOpen(false);
   };
 
   const adjustQty=(id,delta)=>{
@@ -2548,21 +2560,75 @@ function Inventory({inventory,setInventory,toast}) {
   };
 
   const filtered=inventory.filter(i=>{
+    if(stockFilter==="in"  && Number(i.qty||0)<=0) return false;
+    if(stockFilter==="out" && Number(i.qty||0)>0)  return false;
+    if(stockFilter.startsWith("R") && rimOf(i.size)!==stockFilter) return false;
     if(!filter.trim()) return true;
     const q=filter.toLowerCase();
     return (i.size||"").toLowerCase().includes(q)||(i.brand||"").toLowerCase().includes(q)||(i.location||"").toLowerCase().includes(q);
-  }).sort((a,b)=>(a.size||"").localeCompare(b.size||""));
+  }).sort((a,b)=>{
+    const ar=Number((rimOf(a.size)||"R0").slice(1))||0;
+    const br=Number((rimOf(b.size)||"R0").slice(1))||0;
+    if(ar!==br) return ar-br;
+    return (a.size||"").localeCompare(b.size||"");
+  });
+
+  // Group filtered rows by rim diameter for section headers
+  const grouped = useMemo(()=>{
+    const groups=[];
+    let curRim=null, curList=null;
+    filtered.forEach(it=>{
+      const r=rimOf(it.size)||"Other";
+      if(r!==curRim){ curRim=r; curList=[]; groups.push([r,curList]); }
+      curList.push(it);
+    });
+    return groups;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[filtered]);
 
   const inp={width:"100%",border:"1px solid var(--border)",background:"var(--s3)",color:"var(--t1)",borderRadius:"var(--r3)",padding:"12px 14px",outline:"none",fontSize:15};
   const lbl={fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:".5px",color:"var(--t2)",marginBottom:6,display:"block"};
 
   return html`<div class="screen"><div class="page page-enter">
-    <div style=${{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-      <div class="section-label" style=${{margin:0}}>Inventory</div>
-      <button class="btn sm" onClick=${()=>setBulkOpen(true)}>📤 Bulk Upload</button>
+    <!-- Header row -->
+    <div style=${{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+      <div>
+        <div class="section-label" style=${{margin:0}}>Inventory</div>
+        <div style=${{fontSize:11,color:"var(--t3)",marginTop:2}}>${inventory.length} ${inventory.length===1?"size":"sizes"} tracked</div>
+      </div>
+      <div style=${{display:"flex",gap:6}}>
+        <button class="btn sm" onClick=${()=>setBulkOpen(true)}>📤 Bulk</button>
+        <button class="btn primary sm press-scale" onClick=${()=>setAddOpen(!addOpen)} style=${{fontWeight:700}}>${addOpen?"✕ Close":"+ Add"}</button>
+      </div>
     </div>
 
-    <div class="card card-pad stack">
+    <!-- KPI grid -->
+    <div style=${{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+      <div style=${{background:"var(--s2)",border:"1px solid var(--border)",borderRadius:12,padding:"12px 14px"}}>
+        <div style=${{fontSize:10,fontWeight:800,textTransform:"uppercase",letterSpacing:".6px",color:"var(--t3)"}}>Total Units</div>
+        <div style=${{fontSize:22,fontWeight:800,color:"var(--t1)",fontFamily:'"IBM Plex Mono",monospace',letterSpacing:"-1px",lineHeight:1.1}}>${totalUnits}</div>
+        ${totalValue>0?html`<div style=${{fontSize:10,color:"var(--t3)"}}>Value: ${money(totalValue)}</div>`:html`<div style=${{fontSize:10,color:"var(--t3)"}}>&nbsp;</div>`}
+      </div>
+      <div style=${{background:"var(--s2)",border:"1px solid var(--border)",borderRadius:12,padding:"12px 14px"}}>
+        <div style=${{fontSize:10,fontWeight:800,textTransform:"uppercase",letterSpacing:".6px",color:"var(--t3)"}}>In Stock</div>
+        <div style=${{fontSize:22,fontWeight:800,color:inStockCount>0?"var(--green)":"var(--t2)",fontFamily:'"IBM Plex Mono",monospace',letterSpacing:"-1px",lineHeight:1.1}}>${inStockCount}</div>
+        <div style=${{fontSize:10,color:"var(--t3)"}}>sizes available</div>
+      </div>
+      <div style=${{background:"var(--s2)",border:"1px solid var(--border)",borderRadius:12,padding:"12px 14px"}}>
+        <div style=${{fontSize:10,fontWeight:800,textTransform:"uppercase",letterSpacing:".6px",color:"var(--t3)"}}>Out of Stock</div>
+        <div style=${{fontSize:22,fontWeight:800,color:outOfStock>0?"var(--red)":"var(--t2)",fontFamily:'"IBM Plex Mono",monospace',letterSpacing:"-1px",lineHeight:1.1}}>${outOfStock}</div>
+        <div style=${{fontSize:10,color:"var(--t3)"}}>needs restock</div>
+      </div>
+      <div style=${{background:"var(--s2)",border:"1px solid var(--border)",borderRadius:12,padding:"12px 14px"}}>
+        <div style=${{fontSize:10,fontWeight:800,textTransform:"uppercase",letterSpacing:".6px",color:"var(--t3)"}}>Sizes</div>
+        <div style=${{fontSize:22,fontWeight:800,color:"var(--t1)",fontFamily:'"IBM Plex Mono",monospace',letterSpacing:"-1px",lineHeight:1.1}}>${inventory.length}</div>
+        <div style=${{fontSize:10,color:"var(--t3)"}}>unique entries</div>
+      </div>
+    </div>
+
+    <!-- Collapsible add-tire panel -->
+    ${addOpen&&html`<div class="card card-pad stack card-anim" style=${{marginBottom:12}}>
+      <div style=${{fontSize:12,fontWeight:800,color:"var(--t2)",textTransform:"uppercase",letterSpacing:".5px",marginBottom:4}}>Add a tire</div>
       <div style=${{display:"grid",gridTemplateColumns:"2fr 1fr",gap:8}}>
         <div><label style=${lbl}>Tire size</label>
           <input type="text" value=${size} onChange=${e=>setSize(e.target.value)} placeholder="225/65R17" style=${inp}/>
@@ -2588,34 +2654,70 @@ function Inventory({inventory,setInventory,toast}) {
         <input type="text" value=${location} onChange=${e=>setLocation(e.target.value)} placeholder="Van, Storage, Garage…" style=${inp}/>
       </div>
       <button class="btn primary press-scale" onClick=${add}>+ Add Tire</button>
+    </div>`}
+
+    <!-- Search + filter chips + density -->
+    <div class="card card-pad stack" style=${{marginBottom:12,paddingBottom:14}}>
+      <input type="search" value=${filter} onChange=${e=>setFilter(e.target.value)} placeholder="Search by size, brand or location…" style=${inp}/>
+      <div style=${{display:"flex",gap:6,overflowX:"auto",WebkitOverflowScrolling:"touch",paddingBottom:2,margin:"0 -2px"}}>
+        ${[
+          {k:"all",l:"All",c:inventory.length},
+          {k:"in",l:"In stock",c:inStockCount},
+          {k:"out",l:"Out",c:outOfStock},
+          ...rimFacets.map(([r,c])=>({k:r,l:r,c}))
+        ].map(f=>html`<button key=${f.k} type="button" class=${"chip sm"+(stockFilter===f.k?" active":"")} onClick=${()=>setStockFilter(f.k)} style=${{flexShrink:0}}>${f.l} <span style=${{opacity:.6,marginLeft:4,fontFamily:'"IBM Plex Mono",monospace'}}>${f.c}</span></button>`)}
+      </div>
+      <div style=${{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:11,color:"var(--t3)"}}>
+        <div>${filtered.length} ${filtered.length===1?"result":"results"}</div>
+        <button class="btn sm" style=${{padding:"4px 10px",fontSize:11}} onClick=${()=>setCompact(!compact)}>${compact?"Detail view":"Compact view"}</button>
+      </div>
     </div>
 
-    <div class="card card-pad stack">
-      <div style=${{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
-        <div>
-          <div style=${{fontWeight:700,color:"var(--t1)"}}>${totalUnits} units</div>
-          <div style=${{fontSize:11,color:"var(--t3)"}}>Value: ${money(totalValue)}${outOfStock>0?" · "+outOfStock+" out of stock":""}</div>
+    <!-- Grouped list -->
+    ${filtered.length===0?html`<div class="card card-pad" style=${{textAlign:"center",color:"var(--t3)",fontSize:13,padding:"30px 20px"}}>
+      <div style=${{fontSize:36,marginBottom:8,opacity:.5}}>🛞</div>
+      <div>No inventory items match your filters.</div>
+    </div>`:
+      grouped.map(([rim,items])=>html`<div key=${rim} style=${{marginBottom:14}}>
+        <div style=${{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"0 4px 6px"}}>
+          <div style=${{fontSize:11,fontWeight:800,color:"var(--t2)",textTransform:"uppercase",letterSpacing:"1px"}}>${rim==="Other"?"Other":rim+'" rim'}</div>
+          <div style=${{fontSize:10,color:"var(--t3)",fontFamily:'"IBM Plex Mono",monospace'}}>${items.length} · ${items.reduce((t,i)=>t+Number(i.qty||0),0)}u</div>
         </div>
-        <button class="btn sm" onClick=${()=>setCompact(!compact)}>${compact?"Detail":"Compact"}</button>
-      </div>
-      <input type="search" value=${filter} onChange=${e=>setFilter(e.target.value)} placeholder="Search by size, brand or location…" style=${inp}/>
-      ${filtered.length===0?html`<div style=${{color:"var(--t3)",fontSize:13,textAlign:"center",padding:"20px 0"}}>No inventory items match.</div>`:
-        filtered.map(i=>{
-          const oos = Number(i.qty||0) <= 0;
-          return html`<div key=${i.id} style=${{display:"flex",alignItems:"center",gap:10,padding:"10px 0",borderBottom:"1px solid var(--border)",opacity:oos?.55:1}}>
-            <div style=${{flex:1,minWidth:0}}>
-              <div style=${{fontWeight:700,color:"var(--t1)",fontFamily:'"IBM Plex Mono",monospace'}}>${i.size}${i.condition&&i.condition.toLowerCase()==="used"?html` <span style=${{fontSize:10,padding:"2px 6px",background:"var(--s3)",borderRadius:4,marginLeft:6,color:"var(--t3)"}}>USED</span>`:""}${oos?html` <span style=${{fontSize:10,padding:"2px 6px",background:"rgba(239,68,68,.15)",borderRadius:4,marginLeft:6,color:"var(--red)",fontWeight:700}}>OUT OF STOCK</span>`:""}</div>
-              ${!compact&&html`<div style=${{fontSize:11,color:"var(--t3)"}}>${i.brand||""}${i.cost?" · "+money(i.cost)+" each":""}${i.location?" · "+i.location:""}</div>`}
-            </div>
-            <div style=${{display:"flex",alignItems:"center",gap:4}}>
-              <button class="btn sm" onClick=${()=>adjustQty(i.id,-1)}>−</button>
-              <div style=${{minWidth:32,textAlign:"center",fontFamily:'"IBM Plex Mono",monospace',fontWeight:700,color:oos?"var(--red)":"var(--t1)"}}>${i.qty}</div>
-              <button class="btn sm" onClick=${()=>adjustQty(i.id,1)}>+</button>
-              <button class="btn sm danger" onClick=${()=>del(i.id)}>🗑</button>
-            </div>
-          </div>`;
-        })}
-    </div>
+        <div class="card" style=${{padding:0}}>
+          ${items.map((i,idx)=>{
+            const oos = Number(i.qty||0) <= 0;
+            const isUsed = i.condition && i.condition.toLowerCase()==="used";
+            const isLow = !oos && Number(i.qty||0) === 1;
+            return html`<div key=${i.id} style=${{
+              display:"flex",alignItems:"center",gap:10,padding:"12px 14px",
+              borderBottom:idx<items.length-1?"1px solid var(--border2)":"none",
+              opacity:oos?.6:1,
+              background:oos?"rgba(239,68,68,.025)":"transparent"
+            }}>
+              <div style=${{width:3,alignSelf:"stretch",borderRadius:2,background:oos?"var(--red)":isLow?"#f59e0b":"var(--green)",flexShrink:0,minHeight:38}}></div>
+              <div style=${{flex:1,minWidth:0}}>
+                <div style=${{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                  <span style=${{fontWeight:800,color:"var(--t1)",fontFamily:'"IBM Plex Mono",monospace',fontSize:15,letterSpacing:"-.3px"}}>${i.size}</span>
+                  ${isUsed?html`<span style=${{fontSize:9,padding:"2px 6px",background:"var(--s3)",borderRadius:4,color:"var(--t3)",fontWeight:700,letterSpacing:".5px"}}>USED</span>`:html`<span style=${{fontSize:9,padding:"2px 6px",background:"rgba(34,197,94,.12)",borderRadius:4,color:"var(--green)",fontWeight:700,letterSpacing:".5px"}}>NEW</span>`}
+                  ${oos?html`<span style=${{fontSize:9,padding:"2px 6px",background:"rgba(239,68,68,.15)",borderRadius:4,color:"var(--red)",fontWeight:800,letterSpacing:".5px"}}>OUT</span>`:isLow?html`<span style=${{fontSize:9,padding:"2px 6px",background:"rgba(245,158,11,.15)",borderRadius:4,color:"#f59e0b",fontWeight:800,letterSpacing:".5px"}}>LOW</span>`:""}
+                </div>
+                ${!compact&&(i.brand||i.cost||i.location)&&html`<div style=${{fontSize:11,color:"var(--t3)",marginTop:3,display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+                  ${i.brand?html`<span style=${{color:"var(--t2)",fontWeight:600}}>${i.brand}</span>`:""}
+                  ${i.cost?html`<span style=${{fontFamily:'"IBM Plex Mono",monospace'}}>${money(i.cost)}/ea</span>`:""}
+                  ${i.location?html`<span>📍 ${i.location}</span>`:""}
+                </div>`}
+              </div>
+              <div style=${{display:"flex",alignItems:"center",background:"var(--s3)",borderRadius:10,padding:2}}>
+                <button onClick=${()=>adjustQty(i.id,-1)} style=${{width:32,height:32,border:"none",background:"transparent",color:oos?"var(--t3)":"var(--t1)",fontSize:18,fontWeight:700,borderRadius:8,cursor:"pointer"}}>−</button>
+                <div style=${{minWidth:36,textAlign:"center",fontFamily:'"IBM Plex Mono",monospace',fontSize:16,fontWeight:800,color:oos?"var(--red)":isLow?"#f59e0b":"var(--t1)"}}>${i.qty}</div>
+                <button onClick=${()=>adjustQty(i.id,1)} style=${{width:32,height:32,border:"none",background:"transparent",color:"var(--blue)",fontSize:18,fontWeight:700,borderRadius:8,cursor:"pointer"}}>+</button>
+              </div>
+              <button onClick=${()=>del(i.id)} style=${{width:32,height:32,border:"none",background:"rgba(239,68,68,.08)",color:"var(--red)",fontSize:14,borderRadius:8,cursor:"pointer",flexShrink:0}}>🗑</button>
+            </div>`;
+          })}
+        </div>
+      </div>`)
+    }
     <${BulkUploadModal} open=${bulkOpen} onClose=${()=>setBulkOpen(false)} inventory=${inventory} setInventory=${setInventory} toast=${toast}/>
   </div></div>`;
 }
