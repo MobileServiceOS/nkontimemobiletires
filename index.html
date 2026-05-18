@@ -877,6 +877,7 @@ const DEFAULT_INSTALL_FLAT_TIER = {1:90, 2:140, 3:190, 4:220, extra:30};
 const DEFAULT_SETTINGS = {
   businessName:"N & K On Time Mobile Tires LLC", ownerName:"Owner",
   userRole:"owner", // 'owner' (full access) or 'tech' (no pricing-rule editing)
+  weekStartDay:5, // 0=Sun … 6=Sat. Business week begins on this day.
   weeklyGoal:1200, taxRate:25, repairTarget:90, replacementTarget:110,
   skipThreshold:70, riskyMiles:25, costPerMile:0.65,
   defaultTargetProfit:100,
@@ -1055,9 +1056,12 @@ function calculateJobPricing(job, settings) {
 function suggestedPrice(j, s) {
   return calculateJobPricing(j, s).suggestedPrice;
 }
-function getWeekStart(d) {
+function getWeekStart(d, startDay) {
+  // startDay: 0=Sun, 1=Mon, ... 6=Sat. Defaults to 5 (Friday) for back-compat.
+  const sd = (startDay==null || startDay==="") ? 5 : ((Number(startDay)%7)+7)%7;
   const dt = new Date(d+"T12:00:00"), day = dt.getDay();
-  dt.setDate(dt.getDate()-(day>=5?day-5:day+2));
+  const back = (day - sd + 7) % 7;
+  dt.setDate(dt.getDate()-back);
   return dt.toLocaleDateString("en-CA",{timeZone:"America/New_York"});
 }
 function weekLabel(s) {
@@ -1075,10 +1079,10 @@ function nextFriday() {
   const fri = new Date(now); fri.setDate(fri.getDate() + offset);
   return fri.toLocaleDateString("en-US",{timeZone:"America/New_York",weekday:"short",month:"short",day:"numeric"});
 }
-function groupByWeek(jobs) {
+function groupByWeek(jobs, startDay) {
   const map = {};
   [...(jobs||[])].sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id))
-    .forEach(j => { const k=getWeekStart(j.date); if(!map[k]) map[k]=[]; map[k].push(j); });
+    .forEach(j => { const k=getWeekStart(j.date,startDay); if(!map[k]) map[k]=[]; map[k].push(j); });
   return Object.entries(map).sort((a,b)=>b[0].localeCompare(a[0]));
 }
 const getMonthKey = d => String(d||"").slice(0,7);
@@ -1887,8 +1891,9 @@ function Dashboard({jobs,settings,setTab,onRepeat,inventory,onStartJob}) {
   const qqChange=(k,v)=>setQqForm(p=>({...p,[k]:v}));
   const qqApply=price=>setQqForm(p=>({...p,revenue:price}));
   const safeJobs=Array.isArray(jobs)?jobs:[];
-  const today=TODAY(),thisWeek=getWeekStart(today);
-  const weekJobs=useMemo(()=>safeJobs.filter(j=>getWeekStart(j.date)===thisWeek),[safeJobs,thisWeek]);
+  const wsd=settings&&settings.weekStartDay;
+  const today=TODAY(),thisWeek=getWeekStart(today,wsd);
+  const weekJobs=useMemo(()=>safeJobs.filter(j=>getWeekStart(j.date,wsd)===thisWeek),[safeJobs,thisWeek,wsd]);
   const todayJobs=useMemo(()=>safeJobs.filter(j=>j.date===today),[safeJobs,today]);
   const earnedJobs    = useMemo(()=>weekJobs.filter(j=>!isStatusUncollected(j.status)&&!isStatusCancelled(j.status)),[weekJobs]);
   const pendingWk     = useMemo(()=>weekJobs.filter(j=>isStatusUncollected(j.status)),[weekJobs]);
@@ -1926,7 +1931,7 @@ function Dashboard({jobs,settings,setTab,onRepeat,inventory,onStartJob}) {
   }, [top5Tires, inventory]);
 
   const lastWeekStart=useMemo(()=>{const d=new Date(thisWeek+"T12:00:00");d.setDate(d.getDate()-7);return d.toLocaleDateString("en-CA",{timeZone:"America/New_York"});},[thisWeek]);
-  const lastWeekJobs=useMemo(()=>safeJobs.filter(j=>getWeekStart(j.date)===lastWeekStart),[safeJobs,lastWeekStart]);
+  const lastWeekJobs=useMemo(()=>safeJobs.filter(j=>getWeekStart(j.date,wsd)===lastWeekStart),[safeJobs,lastWeekStart,wsd]);
   const lastWeekGross=lastWeekJobs.reduce((s,j)=>s+jobGrossProfit(j,settings),0);
   const wowChange=lastWeekGross>0?Math.round(((totals.grossProfit-lastWeekGross)/lastWeekGross)*100):0;
   const ringColor=goalPct>=100?"var(--green)":goalPct>=60?"var(--blue)":"var(--amber)";
@@ -2306,7 +2311,7 @@ function HistoryJobRow({job,settings,onEdit,onDelete,onInvoice,onReview}) {
 
 // ── History ─────────────────────────────────────────────────────────────────
 function History({jobs,settings,onEdit,onDelete,onInvoice,onReview}) {
-  const groups=useMemo(()=>groupByWeek(jobs),[jobs]);
+  const groups=useMemo(()=>groupByWeek(jobs,settings&&settings.weekStartDay),[jobs,settings]);
   if(!jobs||jobs.length===0){
     return html`<div class="screen"><div class="page page-enter">
       <${EmptyState} icon="📋" title="No jobs yet" sub="Logged jobs will appear here."/>
@@ -2384,7 +2389,7 @@ function Expenses({expenses,setExpenses,toast}) {
 
 // ── Payouts ─────────────────────────────────────────────────────────────────
 function Payouts({jobs,expenses,settings}) {
-  const groups=useMemo(()=>groupByWeek(jobs),[jobs]);
+  const groups=useMemo(()=>groupByWeek(jobs,settings&&settings.weekStartDay),[jobs,settings]);
   const ownerName=settings.ownerName||"Owner";
   return html`<div class="screen"><div class="page page-enter">
     <div class="section-label">Owner Payouts</div>
@@ -2775,6 +2780,18 @@ function Settings({settings,setSettings,jobs,inventory,toast}) {
       <div><label style=${lbl}>Google review URL</label>
         <input type="url" value=${settings.googleReviewUrl||""} onChange=${e=>update("googleReviewUrl",e.target.value)} placeholder="https://g.page/r/…" style=${inp}/>
         <div style=${{fontSize:11,color:"var(--t3)",marginTop:4}}>Used for the "Send Review" SMS template.</div>
+      </div>
+      <div><label style=${lbl}>Week starts on</label>
+        <select value=${settings.weekStartDay!=null?String(settings.weekStartDay):"5"} onChange=${e=>update("weekStartDay",Number(e.target.value))} style=${inp}>
+          <option value="0">Sunday</option>
+          <option value="1">Monday</option>
+          <option value="2">Tuesday</option>
+          <option value="3">Wednesday</option>
+          <option value="4">Thursday</option>
+          <option value="5">Friday</option>
+          <option value="6">Saturday</option>
+        </select>
+        <div style=${{fontSize:11,color:"var(--t3)",marginTop:4}}>Sets the first day of the business week for the Dashboard, History grouping, and Payouts.</div>
       </div>
     </div>
 
